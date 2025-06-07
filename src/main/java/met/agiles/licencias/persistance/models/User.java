@@ -6,12 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import met.agiles.licencias.enums.Role;
 
+@Table(name = "users")
 @Entity
-@Table(name = "usuarios")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Usuario {
+public class User {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,3 +32,4 @@ public class Usuario {
     
     private String ciudad;
 }
+

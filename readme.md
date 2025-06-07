@@ -38,7 +38,7 @@ cd licencias
 
 ## ⚙️ Configuración de la base de datos
 
-### 1. Verifica que el usuario `postgres` tenga una contraseña
+### 1. Verifica que el user `postgres` tenga una contraseña
 
 Abre la consola de PostgreSQL:
 

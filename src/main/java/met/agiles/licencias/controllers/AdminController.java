@@ -1,7 +1,7 @@
 package met.agiles.licencias.controllers;
 
 import met.agiles.licencias.enums.Role;
-import met.agiles.licencias.persistance.models.Usuario;
+import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -22,14 +22,14 @@ public class AdminController {
     public String adminHome(Model model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
-        Usuario usuario = usuarioRepository.findByUsername(username).orElse(null);
+        User user = usuarioRepository.findByUsername(username).orElse(null);
         
         model.addAttribute("title", "Panel de Administrador");
-        model.addAttribute("usuario", usuario);
+        model.addAttribute("usuario", user);
         
         // Agregar estadísticas o datos adicionales para el panel de admin
         long totalUsuarios = usuarioRepository.count();
-        long totalAdministrativos = usuarioRepository.countByRol(Role.ADMINISTRATIVO);
+        long totalAdministrativos = usuarioRepository.countByRole(Role.ADMINISTRATIVO);
         
         model.addAttribute("totalUsuarios", totalUsuarios);
         model.addAttribute("totalAdministrativos", totalAdministrativos);

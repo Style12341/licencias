@@ -1,11 +1,10 @@
 package met.agiles.licencias.services;
 
-import met.agiles.licencias.persistance.models.Usuario;
+import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,16 +21,16 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByUsername(username)
+        User user = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
-
         List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRole().name()));
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
 
-        return User.builder()
-                .username(usuario.getUsername())
-                .password(usuario.getPassword())
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
                 .authorities(authorities)
                 .build();
     }
 }
+

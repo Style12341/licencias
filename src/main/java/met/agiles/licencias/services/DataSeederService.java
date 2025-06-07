@@ -1,7 +1,7 @@
 package met.agiles.licencias.services;
 
 import met.agiles.licencias.enums.Role;
-import met.agiles.licencias.persistance.models.Usuario;
+import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -26,7 +26,7 @@ public class DataSeederService implements CommandLineRunner {
     private void seedAdministrator() {
         // Check if administrator already exists
         if (!usuarioRepository.existsByUsername("admin")) {
-            Usuario admin = new Usuario();
+            User admin = new User();
             admin.setUsername("admin");
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setRole(Role.ADMINISTRADOR);
@@ -45,7 +45,7 @@ public class DataSeederService implements CommandLineRunner {
     private void seedAdministrativo() {
         // Check if administrativo already exists
         if (!usuarioRepository.existsByUsername("administrativo")) {
-            Usuario administrativo = new Usuario();
+            User administrativo = new User();
             administrativo.setUsername("administrativo");
             administrativo.setPassword(passwordEncoder.encode("admin123"));
             administrativo.setRole(Role.ADMINISTRATIVO);
