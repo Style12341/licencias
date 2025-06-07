@@ -22,7 +22,8 @@ public class AdminController {
     public String adminHome(Model model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
-        User user = usuarioRepository.findByUsername(username).orElse(null);
+        User user = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalStateException("User not found for username: " + username));
         
         model.addAttribute("title", "Panel de Administrador");
         model.addAttribute("usuario", user);
