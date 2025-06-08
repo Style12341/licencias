@@ -13,8 +13,7 @@ import lombok.NoArgsConstructor;
 public class Holder {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String dni;
     
     @Column(nullable = false)
     private String name;

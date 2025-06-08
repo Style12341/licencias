@@ -9,7 +9,7 @@
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
       <div class="container-fluid">
-        <a class="navbar-brand" href="administrativo/home">Sistema de Licencias</a>
+        <a class="navbar-brand" href="/administrativo/home">Sistema de Licencias</a>
         <div class="navbar-nav ms-auto">
           <span class="navbar-text me-3"> Bienvenido, <span sec:authentication="name"></span> (Administrativo) </span>
           <a class="btn btn-outline-light" th:href="@{/logout}">Cerrar Sesión</a>
@@ -19,88 +19,89 @@
 
     <div class="container mt-4">
       <form th:object="${license}" method="post" action="/administrativo/licencias">
-        <div th:if="${#fields.hasErrors()}">
-          <span th:each="error : ${#fields.errors()}" th:text="${error}">Error</span>
-      </div>
         <div class="container mt-4">
           <h1 th:text="${title}"></h1>
           <div class="row">
             <div class="col-md-6">
               <div class="card">
                 <div class="card-body">
-                  <h5 class="card-title">Información del Titular</h5>
-                  <div class="form-group">
-                    <label for="dni">DNI:</label>
-                    <input type="text" th:field="*{dni}" id="dni" class="form-control" required/>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="dni">DNI:</label>
+                        <input type="text" th:field="*{dni}" id="dni" class="form-control" required/>
+                      </div>
+                      <div class="form-group">
+                        <label for="last_name">Apellido:</label>
+                        <input type="text" th:field="*{last_name}" id="last_name" class="form-control" required/>
+                      </div>
+                      <div class="form-group">
+                        <label for="address_name">Domicilio (nombre):</label>
+                        <input type="text" th:field="*{address_name}" id="address_name" class="form-control" required/>
+                      </div>
+                      <div class="form-group">
+                        <label for="city">Ciudad:</label>
+                        <input type="text" th:field="*{city}" id="city" class="form-control" required/>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="cuit">CUIT:</label>
+                        <input type="text" th:field="*{cuit}" id="cuit" class="form-control" required/>
+                      </div>
+                      <div class="form-group">
+                        <label for="first_name">Nombre/s:</label>
+                        <input type="text" th:field="*{first_name}" id="first_name" class="form-control" required/>
+                      </div>
+                      <div class="form-group">
+                        <label for="address_number">Domicilio (número):</label>
+                        <input type="text" th:field="*{address_number}" id="address_number" class="form-control" required/>
+                      </div>
+                      <div class="form-group">
+                        <label for="birthDate">Fecha Nacimiento:</label>
+                        <input type="date" th:field="*{birthDate}" id="birthDate" class="form-control" required/>
+                      </div>
+                    </div>
                   </div>
-                  <div class="form-group">
-                    <label for="cuit">CUIT:</label>
-                    <input type="text" th:field="*{cuit}" id="cuit" class="form-control" required/>
-                  </div>
-                  <div class="form-group">
-                    <label for="last_name">Apellido:</label>
-                    <input type="text" th:field="*{last_name}" id="last_name" class="form-control" required/>
-                  </div>
-                  <div class="form-group">
-                    <label for="first_name">Nombre/s:</label>
-                    <input type="text" th:field="*{first_name}" id="first_name" class="form-control" required/>
-                  </div>
-                  <div class="form-group">
-                    <label for="obvservations">Observaciones:</label>
-                    <input type="text" th:field="*{obvservations}" id="obvservations" class="form-control" required/>
-                  </div>
-                  <div class="form-group mt-1">
-                    <input type="checkbox" th:field="*{isDonor}" id="isDonor" class="form-check-input"/>
-                    <label for="isDonor">Es donante</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Información de la Licencia</h5>
-                  <div class="form-group">
-                    <label for="address_name">Domicilio (nombre):</label>
-                    <input type="text" th:field="*{address_name}" id="address_name" class="form-control" required/>
-                  </div>
-                  <div class="form-group">
-                    <label for="address_number">Domicilio (número):</label>
-                    <input type="text" th:field="*{address_number}" id="address_number" class="form-control" required/>
-                  </div>
-                  <div class="form-group">
-                    <label for="city">Ciudad:</label>
-                    <input type="text" th:field="*{city}" id="city" class="form-control" required/>
-                  </div>
-                  <div class="form-group">
-                    <label for="birthDate">Fecha Nacimiento:</label>
-                    <input type="date" th:field="*{birthDate}" id="birthDate" class="form-control" required/>
-                  </div>
-                  <div class="form-group">
-                    <label for="issuanceDate">Fecha Emisión:</label>
-                    <input type="date" th:field="*{issuanceDate}" id="issuanceDate" class="form-control" required/>
-                  </div>
-                  <div class="form-group">
-                    <label for="expirationDate">Fecha Vencimiento:</label>
-                    <input type="date" th:field="*{expirationDate}" id="expirationDate" class="form-control" required/>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="classes">Tipo Licencia:</label>
+                        <select th:field="*{classes}" id="classes" class="form-control" multiple required>
+                          <option value="A">A</option>
+                          <option value="B">B</option>
+                          <option value="C">C</option>
+                          <option value="D">D</option>
+                          <option value="E">E</option>
+                          <option value="F">F</option>
+                          <option value="G">G</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="obvservations">Observaciones:</label>
+                        <input type="text" th:field="*{obvservations}" id="obvservations" class="form-control"/>
+                      </div>
+                      <div class="form-group mt-1">
+                        <input type="checkbox" th:field="*{isDonor}" id="isDonor" class="form-check-input"/>
+                        <label for="isDonor">Es donante</label>
+                      </div>
+                    </div>
+                    <div>
+                      <div th:if="${#fields.hasErrors()}">
+                        <p th:each="error : ${#fields.errors()}" th:text="${error}" class="text-danger">Error</p>
+                      </div>
+                      <div th:if="${holderNotFound}">
+                        <span class="text-danger">No existe titular con el DNI ingresado</span>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-4">Confirmar</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="form-group">
-            <label for="classes">Tipo Licencia:</label>
-            <select th:field="*{classes}" id="classes" class="form-control" multiple>
-              <option value="A">A</option>
-              <option value="B">B</option>
-              <option value="C">C</option>
-              <option value="D">D</option>
-              <option value="E">E</option>
-              <option value="F">F</option>
-              <option value="G">G</option>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">Issue License</button>
         </div>
       </form>
     </div>
