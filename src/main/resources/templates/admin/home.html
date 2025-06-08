@@ -12,7 +12,7 @@
         <a class="navbar-brand" href="#">Sistema de Licencias</a>
         <div class="navbar-nav ms-auto">
           <span class="navbar-text me-3">
-            Bienvenido, <span th:text="${user.username}"></span> (Administrador)
+            Bienvenido, <span sec:authentication="name"></span> (Administrador)
           </span>
           <a class="btn btn-outline-light btn-sm" th:href="@{/logout}">Cerrar Sesión</a>
         </div>
