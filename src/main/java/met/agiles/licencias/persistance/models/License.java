@@ -66,6 +66,7 @@ public class License {
         name = "license_classes",
         joinColumns = @JoinColumn(name = "license_id")
     )
+    @Enumerated(EnumType.STRING)
     @Column(name = "license_class")
     private List<LicenseClass> classes;
 
