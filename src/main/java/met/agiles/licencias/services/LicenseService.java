@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration;
 import org.springframework.stereotype.Service;
 
-import javax.swing.plaf.synth.SynthOptionPaneUI;
 import java.util.List;
 
 @Service
