@@ -7,5 +7,5 @@ public enum LicenseClass {
     D,
     E,
     F,
-    G;
+    G
 }

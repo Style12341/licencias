@@ -4,7 +4,6 @@ import java.sql.Date;
 import java.util.List;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -67,9 +66,11 @@ public class License {
         name = "license_classes",
         joinColumns = @JoinColumn(name = "license_id")
     )
+    @Enumerated(EnumType.STRING)
     @Column(name = "license_class")
-    private List<LicenseClass> licenseClasses;
 
+    private List<LicenseClass> licenseClasses;
+  
     @Column()
     private String obvservations;
 
