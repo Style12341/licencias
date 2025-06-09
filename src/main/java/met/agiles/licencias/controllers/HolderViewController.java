@@ -38,7 +38,6 @@ public class HolderViewController {
                                      Model model) {
         if (result.hasErrors()) {
             model.addAttribute("title", "Alta de Titular");
-            model.addAttribute("licenseClasses", LicenseClass.values());  // <--- Agregar aquí
             return "administrativo/alta-titular";
         }
 
@@ -48,7 +47,6 @@ public class HolderViewController {
         } catch (IllegalArgumentException e) {
             model.addAttribute("error", e.getMessage());
             model.addAttribute("title", "Alta de Titular");
-            model.addAttribute("licenseClasses", LicenseClass.values());  // <--- Y aquí también
             return "administrativo/alta-titular";
         }
     }
