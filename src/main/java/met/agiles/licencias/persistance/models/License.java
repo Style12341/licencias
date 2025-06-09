@@ -4,12 +4,11 @@ import java.sql.Date;
 import java.util.List;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import met.agiles.licencias.enums.Class;
+import met.agiles.licencias.enums.LicenseClass;
 
 @Entity
 @Table(name = "licenses", schema="public")
@@ -68,7 +67,7 @@ public class License {
         joinColumns = @JoinColumn(name = "license_id")
     )
     @Column(name = "license_class")
-    private List<Class> classes;
+    private List<LicenseClass> classes;
 
     @Column()
     private String obvservations;
