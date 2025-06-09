@@ -60,14 +60,6 @@
         </div>
 
         <div class="col-md-6">
-            <label class="form-label">Clase solicitada</label>
-            <select class="form-select" th:field="*{licenseClass}" required>
-                <option value="" disabled selected>Seleccione</option>
-                <option th:each="clase : ${licenseClasses}" th:value="${clase}" th:text="${clase}"></option>
-            </select>
-        </div>
-
-        <div class="col-md-6">
             <label class="form-label">Grupo sanguíneo y factor RH</label>
             <input type="text" class="form-control" th:field="*{bloodType}" placeholder="Ej: A+, B-, O+" required />
         </div>

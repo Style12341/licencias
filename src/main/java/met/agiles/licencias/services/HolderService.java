@@ -28,9 +28,6 @@ public class HolderService {
             throw new IllegalArgumentException("Titular con DNI ya registrado");
         }
 
-        if (!EnumSet.allOf(LicenseClass.class).contains(dto.getLicenseClass())) {
-            throw new IllegalArgumentException("Clase de licencia inválida");
-        }
 
         if (!dto.getBloodType().matches("^(A|B|AB|O)[+-]$")) {
             throw new IllegalArgumentException("Grupo sanguíneo inválido");

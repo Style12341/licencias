@@ -46,7 +46,6 @@ class HolderServiceTest {
     void noDebeCrearSiClaseInvalida() {
         HolderRequestDto dto = new HolderRequestDto();
         dto.setDni("123");
-        dto.setLicenseClass(null); // invalido
 
         when(holderRepository.existsById("123")).thenReturn(false);
 
