@@ -61,9 +61,11 @@
 
         <div class="col-md-6">
             <label class="form-label">Grupo sanguíneo y factor RH</label>
-            <input type="text" class="form-control" th:field="*{bloodType}" placeholder="Ej: A+, B-, O+" required />
+            <select class="form-select" th:field="*{bloodType}" required>
+                <option th:each="type : ${T(met.agiles.licencias.enums.BloodType).values()}"
+                        th:value="${type}" th:text="${type}">Tipo</option>
+            </select>
         </div>
-
         <div class="col-md-6 d-flex align-items-end">
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" th:field="*{donor}" id="donorCheck" />
