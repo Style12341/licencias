@@ -54,4 +54,9 @@ public class LicenseService {
         return total + LicensePricing.getBasePrice(); // gastos administrativos
     }
 
+    public LicenseService(LicensePricingRepository pricingRepository, LicenseRepository licenseRepository) {
+        this.licensePricingRepository = pricingRepository;
+        this.licenseRepository = licenseRepository;
+    }
+
 }
