@@ -68,12 +68,18 @@ public class License {
     )
     @Enumerated(EnumType.STRING)
     @Column(name = "license_class")
-    private List<LicenseClass> classes;
 
+    private List<LicenseClass> licenseClasses;
+  
     @Column()
     private String obvservations;
 
     @Column()
     private Boolean isDonor;
 
+    @Column()
+    private int vigency = 4; // Number of years the license is valid
+
+    @Column()
+    private double cost; // Cost of the license, can be used to calculate the price of the license
 }
