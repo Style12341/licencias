@@ -31,7 +31,7 @@ public class LicenseService {
         return licenseRepository.findById(id).orElse(null);
     }
     
-    public License createLicense(License license) {license.setCost(this.calcularCostoTotal(license)); return licenseRepository.save(license);
+    public License createLicense(License license) { /*license.setCost( this.calcularCostoTotal(license));*/ return licenseRepository.save(license);
     }
     
     public License updateLicense(License license) {
@@ -46,11 +46,11 @@ public class LicenseService {
         double total = 0;
         for (LicenseClass clase : license.getLicenseClasses()) {
             LicensePricing licensePricing = licensePricingRepository.findByLicenseClassAndValidityYears(clase, license.getVigency());
-            System.out.println("Calculating total cost for license class: " + clase + " with price: " + licensePricing.getPrice());
+            //System.out.println("Calculating total cost for license class: " + clase + " with price: " + licensePricing.getPrice());
             total += licensePricing.getPrice();
         }
-        System.out.println("Total cost calculated: " + total);
-        license.setCost(total + LicensePricing.getBasePrice()); // gastos administrativos
+        //System.out.println("Total cost calculated: " + total);
+        //license.setCost(total + LicensePricing.getBasePrice()); // gastos administrativos
         return total + LicensePricing.getBasePrice(); // gastos administrativos
     }
 

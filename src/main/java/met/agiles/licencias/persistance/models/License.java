@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.util.List;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -66,11 +67,10 @@ public class License {
         name = "license_classes",
         joinColumns = @JoinColumn(name = "license_id")
     )
-    @Enumerated(EnumType.STRING)
     @Column(name = "license_class")
-
+    @Enumerated(EnumType.STRING)
     private List<LicenseClass> licenseClasses;
-  
+
     @Column()
     private String obvservations;
 
@@ -78,7 +78,7 @@ public class License {
     private Boolean isDonor;
 
     @Column()
-    private int vigency = 4; // Number of years the license is valid
+    private int vigency = 3; // Number of years the license is valid
 
     @Column()
     private double cost; // Cost of the license, can be used to calculate the price of the license
