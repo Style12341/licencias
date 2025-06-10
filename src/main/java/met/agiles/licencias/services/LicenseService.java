@@ -53,4 +53,19 @@ public class LicenseService {
         return total + LicensePricing.getBasePrice(); // gastos administrativos
     }
 
+    public List<License> searchFilteredLicenses(String dni, String apellido, String orden) {
+        List<License> todas = licenseRepository.findAll();
+
+        return todas.stream()
+                .filter(l -> dni == null || dni.isBlank() || l.getDni().contains(dni))
+                .filter(l -> apellido == null || apellido.isBlank() || l.getLast_name().toLowerCase().contains(apellido.toLowerCase()))
+                .sorted((l1, l2) -> {
+                    if ("desc".equalsIgnoreCase(orden)) {
+                        return l2.getIssuanceDate().compareTo(l1.getIssuanceDate());
+                    } else {
+                        return l1.getIssuanceDate().compareTo(l2.getIssuanceDate());
+                    }
+                })
+                .toList();
+    }
 }
