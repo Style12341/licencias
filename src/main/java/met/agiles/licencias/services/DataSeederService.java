@@ -1,6 +1,7 @@
 package met.agiles.licencias.services;
 
 import met.agiles.licencias.dto.HolderRequestDto;
+import met.agiles.licencias.enums.BloodType;
 import met.agiles.licencias.enums.LicenseClass;
 import met.agiles.licencias.enums.Role;
 import met.agiles.licencias.persistance.models.Holder;
@@ -141,7 +142,7 @@ public class DataSeederService implements CommandLineRunner {
             holder1.setCity("Santa Fe");
             holder1.setAddress("Juan de Garay 1234");
             holder1.setBirthDate(LocalDate.of(1990, 5, 15));
-            holder1.setBloodType("O+");
+            holder1.setBloodType(BloodType.A_NEGATIVE);
             holderService.createHolder(holder1, "administrativo");
 
             HolderRequestDto holder2 = new HolderRequestDto();
@@ -152,7 +153,7 @@ public class DataSeederService implements CommandLineRunner {
             holder2.setCity("Córdoba");
             holder2.setAddress("Av. Colón 5678");
             holder2.setBirthDate(LocalDate.of(1985, 8, 20));
-            holder2.setBloodType("A+");
+            holder2.setBloodType(BloodType.O_POSITIVE);
             holderService.createHolder(holder2, "administrativo");
         } else {
             System.out.println("Holders and Licenses already exist, skipping seeding.");
@@ -169,12 +170,11 @@ public class DataSeederService implements CommandLineRunner {
             license1.setCuit(holder1.getCuil());
             license1.setLast_name(holder1.getLastName());
             license1.setFirst_name(holder1.getName());
-            license1.setAddress_name("Juan de Garay");
-            license1.setAddress_number("1234");
+            license1.setAddress(holder1.getAddress());
             license1.setCity(holder1.getCity());
-            license1.setBirthDate(Date.valueOf(holder1.getBirthDate()));
-            license1.setIssuanceDate(Date.valueOf(LocalDate.now()));
-            license1.setExpirationDate(Date.valueOf(LocalDate.now().plusYears(4)));
+            license1.setBirthDate(holder1.getBirthDate());
+            license1.setIssuanceDate(LocalDate.now());
+            license1.setExpirationDate(LocalDate.now().plusYears(4));
             license1.setLicenseClasses(List.of(LicenseClass.A));
             license1.setCost(licenseService.calcularCostoTotal(license1));
             licenseService.createLicense(license1);
@@ -185,12 +185,11 @@ public class DataSeederService implements CommandLineRunner {
             license2.setCuit(holder1.getCuil());
             license2.setLast_name(holder1.getLastName());
             license2.setFirst_name(holder1.getName());
-            license2.setAddress_name("Juan de Garay");
-            license2.setAddress_number("1234");
+            license2.setAddress(holder1.getAddress());
             license2.setCity(holder1.getCity());
-            license2.setBirthDate(Date.valueOf(holder1.getBirthDate()));
-            license2.setIssuanceDate(Date.valueOf(LocalDate.now()));
-            license2.setExpirationDate(Date.valueOf(LocalDate.now().plusYears(4)));
+            license2.setBirthDate(holder1.getBirthDate());
+            license2.setIssuanceDate(LocalDate.now());
+            license2.setExpirationDate(LocalDate.now().plusYears(4));
             license2.setLicenseClasses(List.of(LicenseClass.B));
             license2.setCost(licenseService.calcularCostoTotal(license2));
             licenseService.createLicense(license2);
@@ -201,12 +200,11 @@ public class DataSeederService implements CommandLineRunner {
             license3.setCuit(holder2.getCuil());
             license3.setLast_name(holder2.getLastName());
             license3.setFirst_name(holder2.getName());
-            license3.setAddress_name("Av. Colón");
-            license3.setAddress_number("5678");
+            license3.setAddress(holder2.getAddress());
             license3.setCity(holder2.getCity());
-            license3.setBirthDate(Date.valueOf(holder2.getBirthDate()));
-            license3.setIssuanceDate(Date.valueOf(LocalDate.now()));
-            license3.setExpirationDate(Date.valueOf(LocalDate.now().plusYears(4)));
+            license3.setBirthDate(holder2.getBirthDate());
+            license3.setIssuanceDate(LocalDate.now());
+            license3.setExpirationDate(LocalDate.now().plusYears(4));
             license3.setLicenseClasses(List.of(LicenseClass.A));
             license3.setCost(licenseService.calcularCostoTotal(license3));
             licenseService.createLicense(license3);
@@ -217,12 +215,11 @@ public class DataSeederService implements CommandLineRunner {
             license4.setCuit(holder2.getCuil());
             license4.setLast_name(holder2.getLastName());
             license4.setFirst_name(holder2.getName());
-            license4.setAddress_name("Av. Colón");
-            license4.setAddress_number("5678");
+            license4.setAddress(holder2.getAddress());
             license4.setCity(holder2.getCity());
-            license4.setBirthDate(Date.valueOf(holder2.getBirthDate()));
-            license4.setIssuanceDate(Date.valueOf(LocalDate.now()));
-            license4.setExpirationDate(Date.valueOf(LocalDate.now().plusYears(4)));
+            license4.setBirthDate(holder2.getBirthDate());
+            license4.setIssuanceDate(LocalDate.now());
+            license4.setExpirationDate(LocalDate.now().plusYears(4));
             license4.setLicenseClasses(List.of(LicenseClass.A, LicenseClass.B, LicenseClass.C));
             license4.setCost(licenseService.calcularCostoTotal(license4));
             licenseService.createLicense(license4);

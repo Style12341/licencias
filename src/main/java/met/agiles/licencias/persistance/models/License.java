@@ -1,6 +1,7 @@
 package met.agiles.licencias.persistance.models;
 
-import java.sql.Date;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 
 import jakarta.persistence.*;
@@ -48,41 +49,39 @@ public class License {
     private String first_name;
 
     @Column(nullable = false)
-    private String address_name;
-
-    @Column(nullable = false)
-    private String address_number;
+    private String address;
     
     @Column(nullable = false)
     private String city;
 
     @Column(nullable = false)
-    private Date birthDate;
+    private LocalDate birthDate;
 
     @Column(nullable = false)
-    private Date issuanceDate;
+    private LocalDate issuanceDate;
 
     @Column(nullable = false)
-    private Date expirationDate;
+    private LocalDate expirationDate;
 
     @ElementCollection
     @CollectionTable(
         name = "license_classes",
         joinColumns = @JoinColumn(name = "license_id")
     )
-    @Enumerated(EnumType.STRING)
     @Column(name = "license_class")
-
+    @Enumerated(EnumType.STRING)
     private List<LicenseClass> licenseClasses;
-  
+
     @Column()
     private String obvservations;
 
     @Column()
     private Boolean isDonor;
 
-    @Column()
-    private int vigency = 4; // Number of years the license is valid
+    public int getVigency() {
+        Period periodo = Period.between(issuanceDate,expirationDate);
+        return periodo.getYears();
+    }
 
     @Column()
     private double cost; // Total cost of the license, including administrative fees

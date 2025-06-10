@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import met.agiles.licencias.enums.LicenseClass;
+import met.agiles.licencias.enums.BloodType;
 
 import java.time.LocalDate;
+import java.time.Period;
 
 @Entity
 @Table(name = "holders")
@@ -37,11 +38,8 @@ public class Holder {
     private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = true) // Por comentario alex TODO: Revisar
-    private LicenseClass licenseClass; // Clase de licencia, Ej: A, B, C, D, E, F, G
-
     @Column(nullable = false)
-    private String bloodType;
+    private BloodType bloodType;
 
     // @Column(nullable = false)
     // private boolean donor = false; deberia ser asi.
@@ -53,4 +51,9 @@ public class Holder {
     @JoinColumn(name = "administrative_id", nullable = false)
     private User administrative;  // TODO: el administrativo es el user no?
 
+    public int getEdad() {
+        LocalDate today = LocalDate.now();
+        Period periodo = Period.between(this.getBirthDate(),today);
+        return periodo.getYears();
+    }
 }

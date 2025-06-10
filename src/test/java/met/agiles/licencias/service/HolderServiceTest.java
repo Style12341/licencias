@@ -64,7 +64,7 @@ class HolderServiceTest {
         dto.setCity("Springfield");
         dto.setBirthDate(LocalDate.of(2000, 1, 1));
         // dto.setLicenseClass(Class.B);
-        dto.setBloodType("O+");
+        dto.setBloodType(met.agiles.licencias.enums.BloodType.O_POSITIVE);
         dto.setDonor(true);
 
         User user = new User();
