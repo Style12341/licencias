@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import met.agiles.licencias.enums.BloodType;
 import met.agiles.licencias.enums.LicenseClass;
 
 import java.time.LocalDate;
@@ -38,11 +39,8 @@ public class Holder {
     private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = true) // Por comentario alex TODO: Revisar
-    private LicenseClass licenseClass; // Clase de licencia, Ej: A, B, C, D, E, F, G
-
     @Column(nullable = false)
-    private String bloodType;
+    private BloodType bloodType;
 
     // @Column(nullable = false)
     // private boolean donor = false; deberia ser asi.

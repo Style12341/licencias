@@ -1,6 +1,7 @@
 package met.agiles.licencias.dto;
 
 import lombok.Data;
+import met.agiles.licencias.enums.BloodType;
 import met.agiles.licencias.enums.LicenseClass;
 
 import java.time.LocalDate;
@@ -14,8 +15,7 @@ public class HolderRequestDto {
     private String address;
     private String city;
     private LocalDate birthDate;
-    private LicenseClass licenseClass;
-    private String bloodType;
+    private BloodType bloodType;
     private boolean donor;
 }
 

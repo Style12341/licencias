@@ -1,6 +1,7 @@
 package met.agiles.licencias.services;
 
 import met.agiles.licencias.dto.HolderRequestDto;
+import met.agiles.licencias.enums.BloodType;
 import met.agiles.licencias.persistance.models.Holder;
 import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.HolderRepository;
@@ -29,7 +30,8 @@ public class HolderService {
         }
 
 
-        if (!dto.getBloodType().matches("^(A|B|AB|O)[+-]$")) {
+        BloodType tipoSangre = dto.getBloodType();
+        if (tipoSangre == null) {
             throw new IllegalArgumentException("Grupo sanguíneo inválido");
         }
 
