@@ -7,10 +7,8 @@ import met.agiles.licencias.persistance.models.LicensePricing;
 import met.agiles.licencias.persistance.repository.LicensePricingRepository;
 import met.agiles.licencias.persistance.repository.LicenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration;
 import org.springframework.stereotype.Service;
 
-import javax.swing.plaf.synth.SynthOptionPaneUI;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
@@ -23,9 +21,6 @@ public class LicenseService {
 
     @Autowired
     private LicensePricingRepository licensePricingRepository;
-
-    @Autowired
-    private SystemMetricsAutoConfiguration systemMetricsAutoConfiguration;
 
     public List<License> getAllLicenses() {
         return licenseRepository.findAll();
@@ -96,6 +91,57 @@ public class LicenseService {
         LocalDate oneMonthBefore = thisYearBirthday.minusMonths(1);
 
         return ( !today.isBefore(oneMonthBefore) && !today.isAfter(thisYearBirthday) );
+    }
+
+    public boolean isValidAge(LocalDate birthDate, List<LicenseClass> licenseClasses) {
+        int age = Period.between(birthDate,LocalDate.now()).getYears();
+        //Log age
+        System.out.println("Age: " + age);
+
+        for (LicenseClass licenseClass : licenseClasses) {
+            // If licenseClass if C, D or E, then the holder must be at least 21 years old. Else he must be at least 17.
+            if (licenseClass == LicenseClass.C || licenseClass == LicenseClass.D || licenseClass == LicenseClass.E) {
+                if (age < 21) {
+                    return false;
+                }
+            } else {
+                if (age < 17) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public boolean isValidFirstTimeForProfessionalLicense(String holderDni, LocalDate birthDate, List<LicenseClass> licenseClasses) {
+        int age = Period.between(birthDate,LocalDate.now()).getYears();
+
+        if (licenseClasses.contains(LicenseClass.C) || licenseClasses.contains(LicenseClass.D) || licenseClasses.contains(LicenseClass.E)) {
+            List<License> licenses = licenseRepository.findByDni(holderDni);
+            boolean hasValidBClassLicense = false;
+            for (License license : licenses) {
+                if (license.getLicenseClasses().contains(LicenseClass.B) && license.getIssuanceDate().isBefore(LocalDate.now().minusYears(1))) {
+                    hasValidBClassLicense = true;
+                }
+            }
+            boolean hasPreviousProfessionalLicense = false;
+            for (License license : licenses) {
+                if (license.getLicenseClasses().contains(LicenseClass.C) || license.getLicenseClasses().contains(LicenseClass.D) || license.getLicenseClasses().contains(LicenseClass.E)) {
+                    hasPreviousProfessionalLicense = true;
+                }
+            }
+
+            if(hasPreviousProfessionalLicense) return true; // Already has a professional license
+            if(hasValidBClassLicense && age<=65) return true; // First time making a professional license
+
+            // Log
+            System.out.println("Has valid B class license: " + hasValidBClassLicense);
+            System.out.println("Age: " + age);
+            System.out.println("Has previous professional license: " + hasPreviousProfessionalLicense);
+
+            return false;
+        }
+        return true; // Not a professional license
     }
 
 

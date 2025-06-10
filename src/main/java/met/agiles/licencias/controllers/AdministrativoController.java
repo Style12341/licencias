@@ -1,6 +1,5 @@
 package met.agiles.licencias.controllers;
 
-import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -8,7 +7,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -30,7 +28,6 @@ import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.HolderRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import met.agiles.licencias.services.LicenseService;
-import met.agiles.licencias.services.UsuarioService;
 
 @Controller
 @RequestMapping("/administrativo")
@@ -74,20 +71,23 @@ public class AdministrativoController {
             return "administrativo/issueLicenseForm"; // Return to the form page with validation errors
         }
 
-        // Check if the holder exists, and assign it to the license
-        Optional<Holder> holder = holderService.findById(license.getDni());
-        if (holder.isEmpty()) {
-            model.addAttribute("holderNotFound", true);
-            return "administrativo/issueLicenseForm"; // Return to the form page with validation errors
-        }else{
-            license.setHolder(holder.get());;
-        }
-
-        LocalDate birthDate = holder.get().getBirthDate();
-        // Validación personalizada para la fecha de nacimiento
+        LocalDate birthDate = license.getBirthDate();
+        // Check if the birth date allows to issue a license today
         if (!licenseService.isValidBirthDateWindow(birthDate)){
             model.addAttribute("invalidBirthDateWindow", true);
-            return "administrativo/issueLicenseForm"; // volvemos al form con mensaje
+            return "administrativo/issueLicenseForm";
+        }
+
+        // Check if the holder is old enough to issue a license
+        if (!licenseService.isValidAge(license.getBirthDate(), license.getLicenseClasses())){
+            model.addAttribute("invalidAge", true);
+            return "administrativo/issueLicenseForm";
+        }
+
+        // Check if the holder can have a first time professional license
+        if (!licenseService.isValidFirstTimeForProfessionalLicense(license.getDni(), license.getBirthDate(), license.getLicenseClasses())) {
+            model.addAttribute("invalidFirstTimeForProfessionalLicense", true);
+            return "administrativo/issueLicenseForm";
         }
 
         // Set the issuance date to the current date
@@ -98,6 +98,15 @@ public class AdministrativoController {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
         license.setUser(user);
+
+        // Check if the holder exists, and assign it to the license. Do not use holder entity data to compute validations.
+        Optional<Holder> holder = holderService.findById(license.getDni());
+        if (holder.isEmpty()) {
+            model.addAttribute("holderNotFound", true);
+            return "administrativo/issueLicenseForm";
+        }else{
+            license.setHolder(holder.get());
+        }
 
         licenseService.createLicense(license);
         return "redirect:/administrativo/home"; // Redirect to the list page after successful creation

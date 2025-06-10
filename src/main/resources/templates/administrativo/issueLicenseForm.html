@@ -92,6 +92,15 @@
                       <div th:if="${holderNotFound}">
                         <span class="text-danger">No existe titular con el DNI ingresado</span>
                       </div>
+                      <div th:if="${invalidBirthDateWindow}">
+                        <span class="text-danger">La fecha de nacimiento ingresada no permite emitir una licencia el dia de hoy</span>
+                      </div>
+                      <div th:if="${invalidAge}">
+                        <span class="text-danger">No se cumple con los requerimientos de edad para las clases solicitadas</span>
+                      </div>
+                      <div th:if="${invalidFirstTimeForProfessionalLicense}">
+                        <span class="text-danger">No se cumple con los requerimientos para emitir una licencia profesional</span>
+                      </div>
                     </div>
                     <button type="submit" class="btn btn-primary mt-4">Confirmar</button>
                   </div>
