@@ -92,6 +92,9 @@
                       <div th:if="${holderNotFound}">
                         <span class="text-danger">No existe titular con el DNI ingresado</span>
                       </div>
+                      <div th:if="${invalidBirthDateWindow}">
+                        <span class="text-danger">La fecha de nacimiento ingresada no permite emitir una licencia el dia de hoy</span>
+                      </div>
                     </div>
                     <button type="submit" class="btn btn-primary mt-4">Confirmar</button>
                   </div>

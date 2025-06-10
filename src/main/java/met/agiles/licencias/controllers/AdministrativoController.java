@@ -83,7 +83,7 @@ public class AdministrativoController {
             license.setHolder(holder.get());;
         }
 
-        LocalDate birthDate = holder.get().getBirthDate();
+        LocalDate birthDate = license.getBirthDate();
         // Validación personalizada para la fecha de nacimiento
         if (!licenseService.isValidBirthDateWindow(birthDate)){
             model.addAttribute("invalidBirthDateWindow", true);
