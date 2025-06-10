@@ -19,6 +19,4 @@ public class PaymentReceipt {
 
     @Column(nullable = false)
     private PaymentMethod paymentMethod;
-    @Column(nullable = false)
-    private double cost;
 }

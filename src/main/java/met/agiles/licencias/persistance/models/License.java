@@ -84,4 +84,6 @@ public class License {
     @Column()
     private int vigency = 4; // Number of years the license is valid
 
+    @Column()
+    private double cost; // Total cost of the license, including administrative fees
 }
