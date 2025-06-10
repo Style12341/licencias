@@ -1,6 +1,8 @@
 package met.agiles.licencias.persistance.models;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 
 import jakarta.persistence.*;
@@ -9,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import met.agiles.licencias.enums.LicenseClass;
+import org.springframework.cglib.core.Local;
 
 @Entity
 @Table(name = "licenses", schema="public")
@@ -53,13 +56,13 @@ public class License {
     private String city;
 
     @Column(nullable = false)
-    private Date birthDate;
+    private LocalDate birthDate;
 
     @Column(nullable = false)
-    private Date issuanceDate;
+    private LocalDate issuanceDate;
 
     @Column(nullable = false)
-    private Date expirationDate;
+    private LocalDate expirationDate;
 
     @ElementCollection
     @CollectionTable(
@@ -76,14 +79,9 @@ public class License {
     @Column()
     private Boolean isDonor;
 
-    @Column()
-    private int vigency = 3; // Number of years the license is valid
-
-    @Column()
-    private double cost; // Cost of the license, can be used to calculate the price of the license
-
-
-
-
+    public int getVigency() {
+        Period periodo = Period.between(issuanceDate,expirationDate);
+        return periodo.getYears();
+    }
 
 }

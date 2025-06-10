@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import met.agiles.licencias.enums.LicenseClass;
 
 import java.time.LocalDate;
+import java.time.Period;
 
 @Entity
 @Table(name = "holders")
@@ -53,4 +54,9 @@ public class Holder {
     @JoinColumn(name = "administrative_id", nullable = false)
     private User administrative;  // TODO: el administrativo es el user no?
 
+    public int getEdad() {
+        LocalDate today = LocalDate.now();
+        Period periodo = Period.between(this.getBirthDate(),today);
+        return periodo.getYears();
+    }
 }

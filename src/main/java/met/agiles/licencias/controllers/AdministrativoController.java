@@ -1,6 +1,7 @@
 package met.agiles.licencias.controllers;
 
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -82,17 +83,21 @@ public class AdministrativoController {
             license.setHolder(holder.get());;
         }
 
+        LocalDate birthDate = holder.get().getBirthDate();
+        // Validación personalizada para la fecha de nacimiento
+        if (!licenseService.isValidBirthDateWindow(birthDate)){
+            model.addAttribute("invalidBirthDateWindow", true);
+            return "administrativo/issueLicenseForm"; // volvemos al form con mensaje
+        }
+
         // Set the issuance date to the current date
-        license.setIssuanceDate(new Date(System.currentTimeMillis()));
+        license.setIssuanceDate(LocalDate.now());
 
         // Set the user to the current user logged
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
         license.setUser(user);
-
-        // Compute the expiration #TODO
-        license.setExpirationDate(new Date(System.currentTimeMillis() + 365L * 24L * 60L * 60L * 1000L));
 
         licenseService.createLicense(license);
         return "redirect:/administrativo/home"; // Redirect to the list page after successful creation

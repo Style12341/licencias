@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,7 +36,8 @@ class LicenseServiceTest {
         // Arrange
         License license = new License();
         license.setLicenseClasses(List.of(LicenseClass.A, LicenseClass.B));
-        license.setVigency(3); // años
+        license.setIssuanceDate(LocalDate.of(2024, 6, 1));
+        license.setExpirationDate(LocalDate.of(2027, 6, 1)); // vigencia de 3 años
 
         LicensePricing tarifaA = new LicensePricing();
         tarifaA.setPrice(25);
@@ -52,7 +54,7 @@ class LicenseServiceTest {
 
         // Assert
         assertEquals(25 + 25 + LicensePricing.getBasePrice(), resultado);
-        assertEquals(resultado, license.getCost()); // también seteó el costo en la licencia
+        assertEquals(resultado, license.getCost()); // también seteó el costo
     }
 
     @Test
@@ -60,12 +62,16 @@ class LicenseServiceTest {
         // Arrange
         License license = new License();
         license.setLicenseClasses(List.of(LicenseClass.C));
-        license.setVigency(5);
+        license.setIssuanceDate(LocalDate.of(2024, 6, 1));
+        license.setExpirationDate(LocalDate.of(2029, 6, 1)); // vigencia de 5 años
 
         when(pricingRepository.findByLicenseClassAndValidityYears(LicenseClass.C, 5))
-                .thenReturn(null); // Simula que no se encuentra tarifa
+                .thenReturn(null); //no se encuentra tarifa
 
         // Act & Assert
-        assertThrows(NullPointerException.class, () -> {licenseService.calcularCostoTotal(license);});
+        assertThrows(NullPointerException.class, () -> {
+            licenseService.calcularCostoTotal(license);
+        });
     }
+
 }
