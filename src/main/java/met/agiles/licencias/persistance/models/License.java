@@ -30,6 +30,10 @@ public class License {
     @JoinColumn(name = "holder_id")
     private Holder holder; // Refers to the license holder. Current data of the holder can be different than the data on the license.
 
+    @OneToOne
+    @JoinColumn(name = "payment_receipt_id")
+    private PaymentReceipt paymentReceipt; // Payment receipt associated with the license
+
     // Printed license data
     @Column(nullable = false)
     private String dni;
@@ -80,6 +84,4 @@ public class License {
     @Column()
     private int vigency = 4; // Number of years the license is valid
 
-    @Column()
-    private double cost; // Cost of the license, can be used to calculate the price of the license
 }
