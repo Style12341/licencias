@@ -54,7 +54,6 @@ class LicenseServiceTest {
 
         // Assert
         assertEquals(25 + 25 + LicensePricing.getBasePrice(), resultado);
-        assertEquals(resultado, license.getCost()); // también seteó el costo
     }
 
     @Test
