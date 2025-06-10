@@ -1,6 +1,5 @@
 package met.agiles.licencias.persistance.models;
 
-import java.sql.Date;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
@@ -11,7 +10,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import met.agiles.licencias.enums.LicenseClass;
-import org.springframework.cglib.core.Local;
 
 @Entity
 @Table(name = "licenses", schema="public")

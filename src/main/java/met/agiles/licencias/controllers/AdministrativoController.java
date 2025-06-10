@@ -1,6 +1,5 @@
 package met.agiles.licencias.controllers;
 
-import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -8,7 +7,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -30,7 +28,6 @@ import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.HolderRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import met.agiles.licencias.services.LicenseService;
-import met.agiles.licencias.services.UsuarioService;
 
 @Controller
 @RequestMapping("/administrativo")

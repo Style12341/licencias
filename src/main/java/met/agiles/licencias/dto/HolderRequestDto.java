@@ -2,7 +2,6 @@ package met.agiles.licencias.dto;
 
 import lombok.Data;
 import met.agiles.licencias.enums.BloodType;
-import met.agiles.licencias.enums.LicenseClass;
 
 import java.time.LocalDate;
 

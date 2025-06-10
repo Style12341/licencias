@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import met.agiles.licencias.enums.BloodType;
-import met.agiles.licencias.enums.LicenseClass;
 
 import java.time.LocalDate;
 import java.time.Period;

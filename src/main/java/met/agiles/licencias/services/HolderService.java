@@ -9,11 +9,9 @@ import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import met.agiles.licencias.enums.LicenseClass;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.EnumSet;
 
 @Service
 public class HolderService {
