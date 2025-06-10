@@ -7,12 +7,9 @@ import met.agiles.licencias.persistance.models.LicensePricing;
 import met.agiles.licencias.persistance.repository.LicensePricingRepository;
 import met.agiles.licencias.persistance.repository.LicenseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration;
 import org.springframework.stereotype.Service;
 
-import javax.swing.plaf.synth.SynthOptionPaneUI;
 import java.time.LocalDate;
-import java.time.Period;
 import java.util.List;
 
 @Service
@@ -23,9 +20,6 @@ public class LicenseService {
 
     @Autowired
     private LicensePricingRepository licensePricingRepository;
-
-    @Autowired
-    private SystemMetricsAutoConfiguration systemMetricsAutoConfiguration;
 
     public List<License> getAllLicenses() {
         return licenseRepository.findAll();
