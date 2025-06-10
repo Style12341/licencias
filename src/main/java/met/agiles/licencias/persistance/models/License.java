@@ -44,10 +44,7 @@ public class License {
     private String first_name;
 
     @Column(nullable = false)
-    private String address_name;
-
-    @Column(nullable = false)
-    private String address_number;
+    private String address;
     
     @Column(nullable = false)
     private String city;
