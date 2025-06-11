@@ -33,6 +33,7 @@
             color: #6c757d;
         }
         .data-label {
+            margin-left: 20px;
             font-weight: bold;
             color: #495057;
         }
@@ -83,13 +84,6 @@
                 <h4>LICENCIA NACIONAL DE CONDUCIR</h4>
             </div>
             <div class="row">
-                <div class="col-md-4 text-center">
-                    <div class="license-photo mx-auto">
-                        <span>FOTO</span>
-                    </div>
-                    <img th:src="@{/path/to/signature.png}" alt="Firma" class="img-fluid mt-3" style="max-height: 50px;"/>
-                    <p class="mt-1"><small>FIRMA DEL TITULAR</small></p>
-                </div>
                 <div class="col-md-8">
                     <p><span class="data-label">N° Licencia:</span> <span class="data-value" th:text="${licencia.id}"></span></p>
                     <p><span class="data-label">Apellido:</span> <span class="data-value" th:text="${licencia.last_name}"></span></p>
@@ -98,6 +92,10 @@
                     <p><span class="data-label">Fecha de Nacimiento:</span> <span class="data-value" th:text="${#temporals.format(licencia.birthDate, 'dd/MM/yyyy')}"></span></p>
                     <p><span class="data-label">Nacionalidad:</span> <span class="data-value">ARGENTINA</span></p>
                     <p><span class="data-label">Clase(s):</span> <span class="data-value fs-4 fw-bold" th:text="${licencia.licenseClasses}"></span></p>
+                </div>
+                <div class="col-md-4 mt-auto text-center">
+                    <img th:src="@{/path/to/signature.png}" alt="Firma" class="img-fluid mt-3" style="max-height: 50px;"/>
+                    <p class="mt-1"><small>FIRMA DEL TITULAR</small></p>
                 </div>
             </div>
             <div class="row mt-3 pt-3 border-top">
@@ -115,13 +113,19 @@
     </div>
 
     <div class="print-button-container no-print">
-        <button onclick="window.print()" class="btn btn-success btn-lg">
-            <i class="fas fa-print"></i> Imprimir Licencia
+        <button th:onclick="|generarPdfLicencia(${licencia.id})|" class="btn btn-success btn-lg">
+            <i class="fas fa-file-pdf"></i> Generar PDF Licencia
         </button>
     </div>
 </div>
 
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function generarPdfLicencia(licenseId) {
+        window.location.href = '/administrativo/licencias/generar-pdf/' + licenseId;
+    }
+</script>
 </body>
 </html>

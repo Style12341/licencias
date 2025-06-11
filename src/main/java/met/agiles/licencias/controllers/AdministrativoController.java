@@ -1,12 +1,17 @@
 package met.agiles.licencias.controllers;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import com.lowagie.text.DocumentException;
 import met.agiles.licencias.persistance.models.LicensePricing;
+import met.agiles.licencias.services.PdfGeneratorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +35,9 @@ public class AdministrativoController {
 
     @Autowired
     private HolderRepository holderService;
+
+    @Autowired
+    private PdfGeneratorService pdfGeneratorService;
 
     @GetMapping("/home")
     public String administrativoHome(Model model) {
@@ -175,5 +183,35 @@ public class AdministrativoController {
             return "redirect:/administrativo/licencias/buscar?error=notfound";
         }
 
+    }
+
+    @GetMapping("/licencias/generar-pdf/{id}")
+    public ResponseEntity<byte[]> generarLicenciaPdf(@PathVariable Long id) {
+        try {
+            License licencia = licenseService.getLicenseById(id);
+            if (licencia == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // La llamada a tu servicio de generación de PDF es la misma
+            byte[] pdfBytes = pdfGeneratorService.generateLicensePdf(licencia);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            String filename = "licencia_" + licencia.getId() + "_" + licencia.getHolder().getLastName().replace(" ", "_") + ".pdf";
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentLength(pdfBytes.length);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+
+        } catch (IOException | DocumentException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
     }
 }
