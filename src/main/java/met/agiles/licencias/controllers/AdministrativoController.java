@@ -2,12 +2,14 @@ package met.agiles.licencias.controllers;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import com.lowagie.text.DocumentException;
-import met.agiles.licencias.persistance.models.LicensePricing;
+import met.agiles.licencias.enums.PaymentMethod;
+import met.agiles.licencias.persistance.models.*;
 import met.agiles.licencias.services.PdfGeneratorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -22,9 +24,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import met.agiles.licencias.persistance.models.Holder;
-import met.agiles.licencias.persistance.models.License;
-import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.HolderRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import met.agiles.licencias.services.LicenseService;
@@ -94,7 +93,7 @@ public class AdministrativoController {
         }
 
         // Set the issuance date to the current date
-        license.setIssuanceDate(LocalDate.now());
+        license.setIssuanceDate(birthDate.withYear(LocalDate.now().getYear()));
 
         // Set the user to the current user logged
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -175,14 +174,21 @@ public class AdministrativoController {
 
         try {
             License licencia = licenseService.getLicenseById(id);
-            model.addAttribute("licencia", licencia);
-            model.addAttribute("title", "Imprimir Licencia - " + licencia.getHolder().getLastName());
-            return "administrativo/licenseToPrint";
-        } catch (RuntimeException e) { // Idealmente una excepción personalizada
-            // Manejar el caso en que la licencia no se encuentre
-            return "redirect:/administrativo/licencias/buscar?error=notfound";
-        }
+            if (licencia == null) {
+                // Manejar el caso en que la licencia no se encuentre
+                return "redirect:/administrativo/licencias/buscar?error=notfound";
+            }
 
+            model.addAttribute("licencia", licencia);
+            model.addAttribute("title", "Imprimir Licencia - " + licencia.getLast_name());
+            model.addAttribute("paymentReceipt", new PaymentReceipt());
+            model.addAttribute("paymentMethods", Arrays.asList(PaymentMethod.values()));
+
+            return "administrativo/licenseToPrint";
+        } catch (RuntimeException e) {
+            // Manejar excepciones de tiempo de ejecución
+            return "redirect:/administrativo/licencias/buscar?error=internal_error";
+        }
     }
 
     @GetMapping("/licencias/generar-pdf/{id}")

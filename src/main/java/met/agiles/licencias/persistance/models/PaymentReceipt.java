@@ -12,7 +12,6 @@ import met.agiles.licencias.enums.PaymentMethod;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentReceipt {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
