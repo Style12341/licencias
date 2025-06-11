@@ -31,6 +31,10 @@ public class License {
     @JoinColumn(name = "holder_id")
     private Holder holder; // Refers to the license holder. Current data of the holder can be different than the data on the license.
 
+    @OneToOne
+    @JoinColumn(name = "payment_receipt_id")
+    private PaymentReceipt paymentReceipt; // Payment receipt associated with the license
+
     // Printed license data
     @Column(nullable = false)
     private String dni;
@@ -79,4 +83,6 @@ public class License {
         return periodo.getYears();
     }
 
+    @Column()
+    private double cost; // Total cost of the license, including administrative fees
 }

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.EnumSet;
+import java.util.List;
 
 @Service
 public class HolderService {
@@ -46,5 +48,13 @@ public class HolderService {
         holder.setAdministrative(admin);
 
         return holderRepository.save(holder);
+    }
+
+    public Holder getHolderByDni(String dni) {
+        return holderRepository.findById(dni).orElse(null);
+    }
+
+    public List<Holder> getAllHolders() {
+        return holderRepository.findAll();
     }
 }

@@ -1,9 +1,11 @@
 package met.agiles.licencias.controllers;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import met.agiles.licencias.persistance.models.LicensePricing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -12,14 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import met.agiles.licencias.persistance.models.Holder;
@@ -121,5 +116,64 @@ public class AdministrativoController {
     public ResponseEntity<Void> deleteLicense(@PathVariable Long id) {
         licenseService.deleteLicense(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/licencias/list")
+    public String mostrarLicenciasConFiltro(
+            @RequestParam(required = false) String dni,
+            @RequestParam(required = false) String apellido,
+            @RequestParam(required = false, defaultValue = "asc") String orden,
+            Model model) {
+
+        List<License> licencias = licenseService.searchFilteredLicenses(dni, apellido, orden);
+
+        model.addAttribute("title", "Listado de Licencias");
+        model.addAttribute("licencias", licencias);
+        model.addAttribute("dni", dni);
+        model.addAttribute("apellido", apellido);
+        model.addAttribute("orden", orden);
+
+        return "administrativo/licensesList";
+    }
+
+    @GetMapping("/licencias/buscar")
+    public String showAndSearchLicensesPage(
+            @RequestParam(required = false) String dni,
+            @RequestParam(required = false) String apellido,
+            @RequestParam(required = false, defaultValue = "asc") String orden,
+            Model model) {
+
+        List<License> licencias = Collections.emptyList();
+
+        boolean realizarBusqueda = (dni != null && !dni.isBlank()) || (apellido != null && !apellido.isBlank());
+
+        if (realizarBusqueda) {
+            licencias = licenseService.searchFilteredLicenses(dni, apellido, orden);
+        }
+
+        model.addAttribute("title", "Buscar Licencia");
+        model.addAttribute("licencias", licencias);
+        model.addAttribute("dni", dni);
+        model.addAttribute("apellido", apellido);
+        model.addAttribute("orden", orden);
+
+        model.addAttribute("busquedaRealizada", realizarBusqueda);
+
+        return "administrativo/searchLicenses";
+    }
+
+    @GetMapping("licencias/imprimir/{id}")
+    public String showPrintLicensePage(@PathVariable Long id, Model model) {
+
+        try {
+            License licencia = licenseService.getLicenseById(id);
+            model.addAttribute("licencia", licencia);
+            model.addAttribute("title", "Imprimir Licencia - " + licencia.getHolder().getLastName());
+            return "administrativo/licenseToPrint";
+        } catch (RuntimeException e) { // Idealmente una excepción personalizada
+            // Manejar el caso en que la licencia no se encuentre
+            return "redirect:/administrativo/licencias/buscar?error=notfound";
+        }
+
     }
 }
