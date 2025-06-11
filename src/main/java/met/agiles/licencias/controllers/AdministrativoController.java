@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import met.agiles.licencias.persistance.models.LicensePricing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,6 +16,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import met.agiles.licencias.enums.LicenseClass;
 import met.agiles.licencias.persistance.models.Holder;
 import met.agiles.licencias.persistance.models.License;
 import met.agiles.licencias.persistance.models.User;
@@ -101,6 +101,10 @@ public class AdministrativoController {
             return "administrativo/issueLicenseForm";
         }else{
             license.setHolder(holder.get());
+        }
+
+        if (licenseService.isFirstLicense(license.getDni())) {
+            license.setObvservations("Principiante por primeros 6 meses. "+license.getObvservations());
         }
 
         licenseService.createLicense(license);

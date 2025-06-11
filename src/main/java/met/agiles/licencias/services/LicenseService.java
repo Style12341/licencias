@@ -159,4 +159,9 @@ public class LicenseService {
                 })
                 .toList();
     }
+
+    public boolean isFirstLicense(String dni) {
+        List<License> licenses = licenseRepository.findByDni(dni);
+        return licenses.isEmpty();
+    }
 }
