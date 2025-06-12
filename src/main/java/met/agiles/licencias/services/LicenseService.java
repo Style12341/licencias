@@ -173,6 +173,11 @@ public class LicenseService {
                 .toList();
     }
 
+    public boolean isFirstLicense(String dni) {
+        List<License> licenses = licenseRepository.findByDni(dni);
+        return licenses.isEmpty();
+    }
+
     @Transactional // Asegura que ambas operaciones (guardar recibo y actualizar licencia) sean atómicas
     public License assignPaymentToLicense(Long licenseId, PaymentMethod paymentMethod) {
         License license = licenseRepository.findById(licenseId)

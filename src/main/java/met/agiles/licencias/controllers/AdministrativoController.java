@@ -27,6 +27,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import met.agiles.licencias.enums.LicenseClass;
+import met.agiles.licencias.persistance.models.Holder;
+import met.agiles.licencias.persistance.models.License;
+import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.HolderRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import met.agiles.licencias.services.LicenseService;
@@ -113,6 +117,10 @@ public class AdministrativoController {
             return "administrativo/issueLicenseForm";
         }else{
             license.setHolder(holder.get());
+        }
+
+        if (licenseService.isFirstLicense(license.getDni())) {
+            license.setObvservations("Principiante por primeros 6 meses. "+license.getObvservations());
         }
 
         licenseService.createLicense(license);
