@@ -97,7 +97,7 @@ public class AdministrativoController {
             return "administrativo/issueLicenseForm";
         }
 
-        // Set the issuance date to the current date
+        // Set the issuance date to the holders birthday date
         license.setIssuanceDate(birthDate.withYear(LocalDate.now().getYear()));
 
         // Set the user to the current user logged
