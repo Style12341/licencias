@@ -22,6 +22,17 @@
             margin-bottom: 1.5rem;
             padding-bottom: 1rem;
         }
+        .license-photo {
+            width: 150px;
+            height: 150px;
+            border: 1px solid #ccc;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #6c757d;
+        }
         .data-label {
             margin-left: 20px;
             font-weight: bold;
@@ -70,10 +81,10 @@
 <div class="container mt-5 mb-5">
     <div class="card p-3 mb-4 no-print">
         <h5 class="card-title">Método de Pago de Impresión de Licencia</h5>
-        <form th:object="${paymentReceipt}">
+        <div>
             <div class="mb-3">
                 <label for="paymentMethod" class="form-label">Método de Pago:</label>
-                <select id="paymentMethod" th:field="*{paymentMethod}" class="form-select" onchange="togglePrintButton()">
+                <select id="paymentMethod" name="paymentMethod" class="form-select" onchange="togglePrintButton()">
                     <option value="">-- Seleccione un método de pago --</option>
                     <option th:each="method : ${paymentMethods}"
                             th:value="${method}"
@@ -81,7 +92,7 @@
                     </option>
                 </select>
             </div>
-        </form>
+        </div>
     </div>
 
     <div class="mb-3">
@@ -124,7 +135,7 @@
     </div>
 
     <div class="print-button-container no-print">
-        <button id="printPdfButton" th:onclick="|generarPdfLicencia(${licencia.id})|" class="btn btn-success btn-lg" disabled>
+        <button id="printPdfButton" onclick="handlePrintProcess()" class="btn btn-success btn-lg" disabled>
             <i class="fas fa-file-pdf"></i> Generar PDF Licencia
         </button>
     </div>
@@ -133,21 +144,80 @@
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<script>
-    // Función para generar el PDF (ya existente)
-    function generarPdfLicencia(licenseId) {
-        window.location.href = '/administrativo/licencias/generar-pdf/' + licenseId;
+<script th:inline="javascript">
+    /*<![CDATA[*/
+
+    const licenseId = /*[[${licencia.id}]]*/ null;
+
+    async function handlePrintProcess() {
+        const paymentMethodSelect = document.getElementById('paymentMethod');
+        const selectedPaymentMethod = paymentMethodSelect.value;
+        const printButton = document.getElementById('printPdfButton');
+
+        if (!licenseId || !selectedPaymentMethod) {
+            console.error("ID de licencia o método de pago no válido.");
+            alert("Por favor, seleccione un método de pago.");
+            return;
+        }
+
+        printButton.disabled = true;
+        printButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
+
+        try {
+            // Paso 1: Enviar el método de pago al servidor para que LicenseService lo asigne
+            const savePaymentResponse = await fetch(`/administrativo/licencias/guardar-metodo-pago/${licenseId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `paymentMethod=${selectedPaymentMethod}`
+            });
+
+            if (savePaymentResponse.ok) {
+                // Paso 2: Generar el PDF
+                const pdfUrl = `/administrativo/licencias/generar-pdf/${licenseId}`;
+
+                // Usar window.open para abrir el PDF en una nueva pestaña/ventana
+                // Esto permite que el PDF se muestre/descargue y el JS de la página actual siga ejecutándose.
+                const pdfWindow = window.open(pdfUrl, '_blank');
+
+                // Puedes añadir una pequeña comprobación si la ventana no se abrió
+                if (pdfWindow === null) {
+                    alert('La ventana emergente fue bloqueada. Por favor, permita ventanas emergentes para descargar el PDF.');
+                }
+            }
+            else{
+                const errorText = await savePaymentResponse.text();
+                throw new Error(`Error al guardar el método de pago: ${savePaymentResponse.status} - ${errorText}`);
+            }
+
+        } catch (error) {
+            console.error("Error en el proceso de impresión:", error);
+            alert("Ocurrió un error al procesar la impresión: " + error.message);
+        } finally {
+            // Este bloque finally se ejecuta SIEMPRE, ya sea que haya un éxito o un error.
+            // Es el lugar ideal para restaurar el estado del botón.
+            printButton.disabled = false;
+            printButton.innerHTML = '<i class="fas fa-file-pdf"></i> Generar PDF Licencia';
+            togglePrintButton(); // Vuelve a verificar el select para asegurar el estado correcto
+        }
     }
 
-    // NUEVA FUNCIÓN: Habilitar/Deshabilitar el botón de impresión
+    // Función para habilitar/deshabilitar el botón (sin cambios)
     function togglePrintButton() {
         const paymentMethodSelect = document.getElementById('paymentMethod');
         const printButton = document.getElementById('printPdfButton');
-        printButton.disabled = !paymentMethodSelect.value;
+
+        if (paymentMethodSelect.value) {
+            printButton.disabled = false;
+        } else {
+            printButton.disabled = true;
+        }
     }
 
-    // Ejecutar la función una vez al cargar la página para establecer el estado inicial del botón
     document.addEventListener('DOMContentLoaded', togglePrintButton);
+
+    /*]]>*/
 </script>
 </body>
 </html>

@@ -11,8 +11,11 @@ import com.lowagie.text.DocumentException;
 import met.agiles.licencias.enums.PaymentMethod;
 import met.agiles.licencias.persistance.models.*;
 import met.agiles.licencias.services.PdfGeneratorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -38,17 +41,19 @@ public class AdministrativoController {
     @Autowired
     private PdfGeneratorService pdfGeneratorService;
 
-    @GetMapping("/home")
-    public String administrativoHome(Model model) {
-        model.addAttribute("title", "Panel de Administrativo");
-        return "administrativo/home";
-    }
+    private static final Logger logger = LoggerFactory.getLogger(AdministrativoController.class);
     
     @Autowired
     private LicenseService licenseService;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @GetMapping("/home")
+    public String administrativoHome(Model model) {
+        model.addAttribute("title", "Panel de Administrativo");
+        return "administrativo/home";
+    }
 
     @GetMapping("/licencias/emitir")
     public String issueLicenseForm(Model model) {
@@ -181,7 +186,6 @@ public class AdministrativoController {
 
             model.addAttribute("licencia", licencia);
             model.addAttribute("title", "Imprimir Licencia - " + licencia.getLast_name());
-            model.addAttribute("paymentReceipt", new PaymentReceipt());
             model.addAttribute("paymentMethods", Arrays.asList(PaymentMethod.values()));
 
             return "administrativo/licenseToPrint";
@@ -218,6 +222,20 @@ public class AdministrativoController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @PostMapping("/licencias/guardar-metodo-pago/{id}")
+    public ResponseEntity<String> savePaymentMethod(
+            @PathVariable("id") Long id,
+            @RequestParam("paymentMethod") PaymentMethod paymentMethod) {
+        try {
+            licenseService.assignPaymentToLicense(id, paymentMethod);
+            logger.info("Método de pago {} asignado a la licencia ID {}", paymentMethod, id);
+            return new ResponseEntity<>("Método de pago guardado exitosamente", HttpStatus.OK);
+        } catch (RuntimeException e) {
+            logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id, e.getMessage());
+            return new ResponseEntity<>("Error al guardar el método de pago", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

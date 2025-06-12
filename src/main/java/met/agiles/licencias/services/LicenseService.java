@@ -1,11 +1,15 @@
 package met.agiles.licencias.services;
 
+import jakarta.transaction.Transactional;
 import met.agiles.licencias.enums.LicenseClass;
+import met.agiles.licencias.enums.PaymentMethod;
 import met.agiles.licencias.persistance.models.Holder;
 import met.agiles.licencias.persistance.models.License;
 import met.agiles.licencias.persistance.models.LicensePricing;
+import met.agiles.licencias.persistance.models.PaymentReceipt;
 import met.agiles.licencias.persistance.repository.LicensePricingRepository;
 import met.agiles.licencias.persistance.repository.LicenseRepository;
+import met.agiles.licencias.persistance.repository.PaymentReceiptRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +25,8 @@ public class LicenseService {
 
     @Autowired
     private LicensePricingRepository licensePricingRepository;
+    @Autowired
+    private PaymentReceiptRepository paymentReceiptRepository;
 
     public List<License> getAllLicenses() {
         return licenseRepository.findAll();
@@ -158,5 +164,18 @@ public class LicenseService {
                     }
                 })
                 .toList();
+    }
+
+    @Transactional // Asegura que ambas operaciones (guardar recibo y actualizar licencia) sean atómicas
+    public License assignPaymentToLicense(Long licenseId, PaymentMethod paymentMethod) {
+        License license = licenseRepository.findById(licenseId)
+                .orElseThrow(() -> new RuntimeException("Licencia no encontrada con ID: " + licenseId));
+
+        PaymentReceipt paymentReceipt = new PaymentReceipt();
+        paymentReceipt.setPaymentMethod(paymentMethod);
+        PaymentReceipt savedPaymentReceipt = paymentReceiptRepository.save(paymentReceipt);
+
+        license.setPaymentReceipt(savedPaymentReceipt);
+        return licenseRepository.save(license); // Guardar la licencia actualizada
     }
 }
