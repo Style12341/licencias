@@ -1,12 +1,19 @@
 package met.agiles.licencias.services;
 
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.transaction.Transactional;
 import met.agiles.licencias.enums.LicenseClass;
-import met.agiles.licencias.persistance.models.Holder;
-import met.agiles.licencias.persistance.models.License;
-import met.agiles.licencias.persistance.models.LicensePricing;
+import met.agiles.licencias.enums.PaymentMethod;
+import met.agiles.licencias.persistance.models.*;
 import met.agiles.licencias.persistance.repository.LicensePricingRepository;
 import met.agiles.licencias.persistance.repository.LicenseRepository;
+import met.agiles.licencias.persistance.repository.PaymentReceiptRepository;
+import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -21,6 +28,12 @@ public class LicenseService {
 
     @Autowired
     private LicensePricingRepository licensePricingRepository;
+
+    @Autowired
+    private PaymentReceiptRepository paymentReceiptRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public List<License> getAllLicenses() {
         return licenseRepository.findAll();
@@ -163,5 +176,25 @@ public class LicenseService {
     public boolean isFirstLicense(String dni) {
         List<License> licenses = licenseRepository.findByDni(dni);
         return licenses.isEmpty();
+    }
+
+    @Transactional // Asegura que ambas operaciones (guardar recibo y actualizar licencia) sean atómicas
+    public License assignPaymentToLicense(Long licenseId, PaymentMethod paymentMethod) {
+        License license = licenseRepository.findById(licenseId)
+                .orElseThrow(() -> new RuntimeException("Licencia no encontrada con ID: " + licenseId));
+
+        PaymentReceipt paymentReceipt = new PaymentReceipt();
+        paymentReceipt.setPaymentMethod(paymentMethod);
+
+        // Set the user to the current user logged
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
+        paymentReceipt.setAdministrativo(user);
+
+        PaymentReceipt savedPaymentReceipt = paymentReceiptRepository.save(paymentReceipt);
+
+        license.setPaymentReceipt(savedPaymentReceipt);
+        return licenseRepository.save(license); // Guardar la licencia actualizada
     }
 }

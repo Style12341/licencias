@@ -12,10 +12,13 @@ import met.agiles.licencias.enums.PaymentMethod;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentReceipt {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "administrativo_id")
+    private User administrativo; // quien llevo a cabo la impresion de la licencia
 
     @Column(nullable = false)
     private PaymentMethod paymentMethod;

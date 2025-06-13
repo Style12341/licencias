@@ -15,7 +15,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -36,7 +35,7 @@ public class DataSeederService implements CommandLineRunner {
     private LicenseService licenseService;
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         seedAdministrator();
         seedAdministrativo();
         seedLicensePricing();
@@ -173,7 +172,7 @@ public class DataSeederService implements CommandLineRunner {
             license1.setAddress(holder1.getAddress());
             license1.setCity(holder1.getCity());
             license1.setBirthDate(holder1.getBirthDate());
-            license1.setIssuanceDate(LocalDate.now());
+            license1.setIssuanceDate(holder1.getBirthDate().withYear(LocalDate.now().getYear()));
             license1.setExpirationDate(LocalDate.now().plusYears(4));
             license1.setLicenseClasses(List.of(LicenseClass.A));
             license1.setCost(licenseService.calcularCostoTotal(license1));
@@ -188,7 +187,7 @@ public class DataSeederService implements CommandLineRunner {
             license2.setAddress(holder1.getAddress());
             license2.setCity(holder1.getCity());
             license2.setBirthDate(holder1.getBirthDate());
-            license2.setIssuanceDate(LocalDate.now());
+            license2.setIssuanceDate(holder1.getBirthDate().withYear(LocalDate.now().getYear()));
             license2.setExpirationDate(LocalDate.now().plusYears(4));
             license2.setLicenseClasses(List.of(LicenseClass.B));
             license2.setCost(licenseService.calcularCostoTotal(license2));
@@ -203,7 +202,7 @@ public class DataSeederService implements CommandLineRunner {
             license3.setAddress(holder2.getAddress());
             license3.setCity(holder2.getCity());
             license3.setBirthDate(holder2.getBirthDate());
-            license3.setIssuanceDate(LocalDate.now());
+            license3.setIssuanceDate(holder2.getBirthDate().withYear(LocalDate.now().getYear()));
             license3.setExpirationDate(LocalDate.now().plusYears(4));
             license3.setLicenseClasses(List.of(LicenseClass.A));
             license3.setCost(licenseService.calcularCostoTotal(license3));
@@ -218,7 +217,7 @@ public class DataSeederService implements CommandLineRunner {
             license4.setAddress(holder2.getAddress());
             license4.setCity(holder2.getCity());
             license4.setBirthDate(holder2.getBirthDate());
-            license4.setIssuanceDate(LocalDate.now());
+            license4.setIssuanceDate(holder2.getBirthDate().withYear(LocalDate.now().getYear()));
             license4.setExpirationDate(LocalDate.now().plusYears(4));
             license4.setLicenseClasses(List.of(LicenseClass.A, LicenseClass.B, LicenseClass.C));
             license4.setCost(licenseService.calcularCostoTotal(license4));

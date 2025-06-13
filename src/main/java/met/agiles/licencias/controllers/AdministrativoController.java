@@ -1,11 +1,22 @@
 package met.agiles.licencias.controllers;
 
+import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import com.lowagie.text.DocumentException;
+import met.agiles.licencias.enums.PaymentMethod;
+import met.agiles.licencias.persistance.models.*;
+import met.agiles.licencias.services.PdfGeneratorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,17 +42,22 @@ public class AdministrativoController {
     @Autowired
     private HolderRepository holderService;
 
-    @GetMapping("/home")
-    public String administrativoHome(Model model) {
-        model.addAttribute("title", "Panel de Administrativo");
-        return "administrativo/home";
-    }
+    @Autowired
+    private PdfGeneratorService pdfGeneratorService;
+
+    private static final Logger logger = LoggerFactory.getLogger(AdministrativoController.class);
     
     @Autowired
     private LicenseService licenseService;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @GetMapping("/home")
+    public String administrativoHome(Model model) {
+        model.addAttribute("title", "Panel de Administrativo");
+        return "administrativo/home";
+    }
 
     @GetMapping("/licencias/emitir")
     public String issueLicenseForm(Model model) {
@@ -85,8 +101,8 @@ public class AdministrativoController {
             return "administrativo/issueLicenseForm";
         }
 
-        // Set the issuance date to the current date
-        license.setIssuanceDate(LocalDate.now());
+        // Set the issuance date to the holders birthday date
+        license.setIssuanceDate(birthDate.withYear(LocalDate.now().getYear()));
 
         // Set the user to the current user logged
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -171,13 +187,63 @@ public class AdministrativoController {
 
         try {
             License licencia = licenseService.getLicenseById(id);
-            model.addAttribute("licencia", licencia);
-            model.addAttribute("title", "Imprimir Licencia - " + licencia.getHolder().getLastName());
-            return "administrativo/licenseToPrint";
-        } catch (RuntimeException e) { // Idealmente una excepción personalizada
-            // Manejar el caso en que la licencia no se encuentre
-            return "redirect:/administrativo/licencias/buscar?error=notfound";
-        }
+            if (licencia == null) {
+                // Manejar el caso en que la licencia no se encuentre
+                return "redirect:/administrativo/licencias/buscar?error=notfound";
+            }
 
+            model.addAttribute("licencia", licencia);
+            model.addAttribute("title", "Imprimir Licencia - " + licencia.getLast_name());
+            model.addAttribute("paymentMethods", Arrays.asList(PaymentMethod.values()));
+
+            return "administrativo/licenseToPrint";
+        } catch (RuntimeException e) {
+            // Manejar excepciones de tiempo de ejecución
+            return "redirect:/administrativo/licencias/buscar?error=internal_error";
+        }
+    }
+
+    @GetMapping("/licencias/generar-pdf/{id}")
+    public ResponseEntity<byte[]> generarLicenciaPdf(@PathVariable Long id) {
+        try {
+            License licencia = licenseService.getLicenseById(id);
+            if (licencia == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            // La llamada a tu servicio de generación de PDF es la misma
+            byte[] pdfBytes = pdfGeneratorService.generateLicensePdf(licencia);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            String filename = "licencia_" + licencia.getId() + "_" + licencia.getHolder().getLastName().replace(" ", "_") + ".pdf";
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentLength(pdfBytes.length);
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+
+        } catch (IOException | DocumentException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
+    @PostMapping("/licencias/guardar-metodo-pago/{id}")
+    public ResponseEntity<String> savePaymentMethod(
+            @PathVariable("id") Long id,
+            @RequestParam("paymentMethod") PaymentMethod paymentMethod) {
+        try {
+            licenseService.assignPaymentToLicense(id, paymentMethod);
+            logger.info("Método de pago {} asignado a la licencia ID {}", paymentMethod, id);
+            return new ResponseEntity<>("Método de pago guardado exitosamente", HttpStatus.OK);
+        } catch (RuntimeException e) {
+            logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id, e.getMessage());
+            return new ResponseEntity<>("Error al guardar el método de pago", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
