@@ -116,8 +116,7 @@
                     <p><span class="data-label">Clase(s):</span> <span class="data-value fs-4 fw-bold" th:text="${licencia.licenseClasses}"></span></p>
                 </div>
                 <div class="col-md-4 mt-auto text-center">
-                    <img th:src="@{/images/signature.png}" alt="Firma" class="img-fluid mt-3" style="max-height: 50px;"/>
-                    <p class="mt-1"><small>FIRMA DEL TITULAR</small></p>
+                    <p th:if="${#strings.isEmpty(licencia.obvservations)}" class="mt-1"><small>No hay observaciones</small></p>
                 </div>
             </div>
             <div class="row mt-3 pt-3 border-top">

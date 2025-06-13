@@ -152,29 +152,20 @@ public class PdfGeneratorService {
 
             mainContentTable.addCell(dataCell);
 
-            // Celda para la firma (columna derecha)
-            PdfPCell signatureCell = new PdfPCell();
-            signatureCell.setBorder(Rectangle.NO_BORDER);
-            signatureCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            signatureCell.setVerticalAlignment(Element.ALIGN_BOTTOM); // Alinea al final de la celda
-            signatureCell.setPadding(0);
-            signatureCell.setPaddingBottom(1f); // Pequeño padding inferior para separar del borde
-
-            try {
-                // Cargar la imagen desde src/main/resources/static/images/signature.png
-                File imageFile = ResourceUtils.getFile("classpath:static/images/signature.png");
-                Image signatureImage = Image.getInstance(imageFile.getAbsolutePath());
-                signatureImage.scaleToFit(50, 15); // Escala la imagen (ancho, alto máx en puntos)
-                signatureImage.setAlignment(Element.ALIGN_CENTER);
-
-                signatureCell.addElement(signatureImage);
-                signatureCell.addElement(new Paragraph("FIRMA DEL TITULAR", fontSmall));
-            } catch (Exception e) {
-                logger.warn("No se pudo cargar la imagen de firma o error al añadirla al PDF: {}", e.getMessage());
-                signatureCell.addElement(new Paragraph("SIN FIRMA", fontSmall));
+            // Celda para las observaciones (columna derecha)
+            PdfPCell observationsCell = new PdfPCell();
+            observationsCell.setBorder(Rectangle.NO_BORDER);
+            observationsCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            observationsCell.setVerticalAlignment(Element.ALIGN_BOTTOM); // Alinea al final de la celda
+            observationsCell.setPadding(0);
+            observationsCell.setPaddingBottom(1f); // Pequeño padding inferior para separar del borde
+            if(licencia.getObvservations() == null){
+                observationsCell.addElement(new Paragraph("No hay observaciones", fontSmall));
             }
+            else observationsCell.addElement(new Paragraph(licencia.getObvservations(), fontSmall));
 
-            mainContentTable.addCell(signatureCell);
+
+            mainContentTable.addCell(observationsCell);
             innerCardTable.addCell(mainContentTable);
 
             // ==========================================================
