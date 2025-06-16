@@ -4,24 +4,18 @@ import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
-import com.lowagie.text.Image;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.Chunk;
 
 import java.awt.Color;
 
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 
@@ -31,7 +25,6 @@ import met.agiles.licencias.enums.LicenseClass; // Asumiendo que LicenseClass es
 @Service
 public class PdfGeneratorService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PdfGeneratorService.class);
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -41,7 +34,6 @@ public class PdfGeneratorService {
         Document document = new Document(pageSize, 0, 0, 0, 0); // Sin márgenes en el documento
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        PdfWriter writer = PdfWriter.getInstance(document, os);
 
         document.open();
 

@@ -1,7 +1,5 @@
 package met.agiles.licencias.services;
 
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.transaction.Transactional;
 import met.agiles.licencias.enums.LicenseClass;
 import met.agiles.licencias.enums.PaymentMethod;

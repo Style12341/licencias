@@ -9,7 +9,6 @@ import java.util.Optional;
 
 import com.lowagie.text.DocumentException;
 import met.agiles.licencias.enums.PaymentMethod;
-import met.agiles.licencias.persistance.models.*;
 import met.agiles.licencias.services.PdfGeneratorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +26,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import met.agiles.licencias.enums.LicenseClass;
 import met.agiles.licencias.persistance.models.Holder;
 import met.agiles.licencias.persistance.models.License;
 import met.agiles.licencias.persistance.models.User;

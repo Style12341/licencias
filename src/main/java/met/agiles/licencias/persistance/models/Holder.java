@@ -49,7 +49,7 @@ public class Holder {
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "administrative_id", nullable = false)
-    private User administrative;  // TODO: el administrativo es el user no?
+    private User administrative;
 
     public int getEdad() {
         LocalDate today = LocalDate.now();
