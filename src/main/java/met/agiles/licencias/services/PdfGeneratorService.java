@@ -13,6 +13,7 @@ import com.lowagie.text.Chunk;
 
 import java.awt.Color;
 
+import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -34,6 +35,7 @@ public class PdfGeneratorService {
         Document document = new Document(pageSize, 0, 0, 0, 0); // Sin márgenes en el documento
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
+        PdfWriter.getInstance(document, os);
 
         document.open();
 

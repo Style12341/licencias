@@ -1,8 +1,8 @@
 package met.agiles.licencias.enums;
 
 public enum PaymentMethod {
-    CREDIT_CARD,
-    DEBIT_CARD,
-    BANK_TRANSFER,
-    CASH
+    TARJETA_DE_CREDITO,
+    TARJETA_DE_DEBITO,
+    TRANSFERENCIA_BANCARIA,
+    EFECTIVO
 }
