@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,23 +18,23 @@ import met.agiles.licencias.enums.LicenseClass;
 @NoArgsConstructor
 @AllArgsConstructor
 public class License {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     // License metadata
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user; // User that created the license
-    
+
     @ManyToOne
     @JoinColumn(name = "holder_id")
     private Holder holder; // Refers to the license holder. Current data of the holder can be different than the data on the license.
 
-    @OneToOne
-    @JoinColumn(name = "payment_receipt_id")
-    private PaymentReceipt paymentReceipt; // Payment receipt associated with the license
+    @JsonIgnore
+    @OneToMany(mappedBy = "license", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PaymentReceipt> paymentReceipts;
 
     // Printed license data
     @Column(nullable = false)
@@ -50,7 +51,7 @@ public class License {
 
     @Column(nullable = false)
     private String address;
-    
+
     @Column(nullable = false)
     private String city;
 
@@ -65,8 +66,8 @@ public class License {
 
     @ElementCollection
     @CollectionTable(
-        name = "license_classes",
-        joinColumns = @JoinColumn(name = "license_id")
+            name = "license_classes",
+            joinColumns = @JoinColumn(name = "license_id")
     )
     @Column(name = "license_class")
     @Enumerated(EnumType.STRING)
