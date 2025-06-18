@@ -10,29 +10,27 @@ import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.Chunk;
-
 import java.awt.Color;
-
 import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.stereotype.Service;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.stream.Collectors;
 
 import met.agiles.licencias.persistance.models.License;
-import met.agiles.licencias.enums.LicenseClass; // Asumiendo que LicenseClass es un enum
+import met.agiles.licencias.enums.LicenseClass;
 
 @Service
 public class PdfGeneratorService {
 
-
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     public byte[] generateLicensePdf(License licencia) throws IOException, DocumentException {
-        // Dimensiones estándar de tarjeta ID-1 en puntos
-        Rectangle pageSize = new Rectangle(242.36f, 153.02f);
-        Document document = new Document(pageSize, 0, 0, 0, 0); // Sin márgenes en el documento
+        // Dimensiones estándar de tarjeta de crédito/ID (ID-1) en puntos (1 pulgada = 72 puntos)
+        // 85.6mm × 53.98mm  => 242.66pt x 153.01pt
+        Rectangle pageSize = new Rectangle(242.66f, 153.01f);
+        Document document = new Document(pageSize, 0, 0, 0, 0);
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         PdfWriter.getInstance(document, os);
@@ -41,194 +39,166 @@ public class PdfGeneratorService {
 
         try {
             // ==========================================================
-            // FUENTES Y COLORES
+            // COLORES Y FUENTES (Tus personalizaciones se mantienen)
             // ==========================================================
-            // Usar Color en lugar de BaseColor
-            Color darkGreen = new Color(25, 135, 84); // #198754
-            Color lightGray = new Color(222, 226, 230); // #dee2e6
-            Color darkGrayText = new Color(73, 80, 87); // #495057 (para data-label)
-            Color black = Color.BLACK;
+            Color primaryBlue = new Color(7, 150, 211); // #0796D3
+            Color lightGrayBorder = new Color(222, 226, 230); // #dee2e6
+            Color dataLabelGray = new Color(73, 80, 87); // #495057
+            Color photoBgGray = new Color(233, 236, 239); // #e9ecef
 
-            Font fontHeader = new Font(Font.HELVETICA, 8, Font.BOLD, black); // Usando darkGrayText
-            Font fontTitle = new Font(Font.HELVETICA, 7, Font.BOLD, black);
-            Font fontLabel = new Font(Font.HELVETICA, 6, Font.BOLD, darkGrayText); // Usando darkGrayText
-            Font fontValue = new Font(Font.HELVETICA, 6, Font.NORMAL, black); // Usando black
-            Font fontClass = new Font(Font.HELVETICA, 9, Font.BOLD, black); // Para la clase de licencia
-            Font fontSmall = new Font(Font.HELVETICA, 5, Font.NORMAL, darkGrayText); // Para "FIRMA DEL TITULAR"
-
-            // ==========================================================
-            // CONTENEDOR PRINCIPAL - Tarjeta con Borde y Fondo
-            // ==========================================================
-            // Para simular el border-radius y background-color en el documento base,
-            // podemos usar un PdfPTable como contenedor principal.
-            PdfPTable cardContainer = new PdfPTable(1);
-            cardContainer.setWidthPercentage(100); // Ocupa todo el ancho de la página
-            cardContainer.setTotalWidth(pageSize.getWidth()); // Ancho total en puntos
-            cardContainer.setLockedWidth(true);
-            cardContainer.getDefaultCell().setBorder(Rectangle.NO_BORDER); // Por defecto sin bordes para las celdas
-
-            // Celda para el contenido de la tarjeta
-            PdfPCell cardContentCell = new PdfPCell();
-            cardContentCell.setBorder(Rectangle.NO_BORDER);
-            cardContentCell.setPadding(0); // El padding lo manejan las tablas internas
-
-            // Creamos una sub-tabla para el diseño de la tarjeta (borde, fondo, padding)
-            PdfPTable innerCardTable = new PdfPTable(1);
-            innerCardTable.setWidthPercentage(100);
-            innerCardTable.setTotalWidth(pageSize.getWidth() - 2f); // Restamos un poco para un margen
-            innerCardTable.setLockedWidth(true);
-            innerCardTable.getDefaultCell().setBorder(Rectangle.NO_BORDER);
-            innerCardTable.getDefaultCell().setPadding(0);
-            innerCardTable.getDefaultCell().setBackgroundColor(new Color(248, 249, 250)); // #f8f9fa background-color
-            innerCardTable.getDefaultCell().setBorderWidth(0.5f); // 0.5mm border
-            innerCardTable.getDefaultCell().setBorderColor(darkGreen);
-            innerCardTable.getDefaultCell().setPadding(8f); // Padding total de la tarjeta (aprox. 3mm)
-            innerCardTable.setSpacingAfter(0); // Sin espacio después
+            Font fontHeader = new Font(Font.COURIER, 9, Font.BOLD, primaryBlue);
+            Font fontSubHeader = new Font(Font.COURIER, 8, Font.NORMAL, primaryBlue);
+            Font fontLabel = new Font(Font.COURIER, 7, Font.BOLD, dataLabelGray);
+            Font fontValue = new Font(Font.COURIER, 7, Font.NORMAL, Color.BLACK);
+            Font fontValueBold = new Font(Font.COURIER, 7, Font.BOLD, Color.BLACK);
+            Font fontClass = new Font(Font.COURIER, 12, Font.BOLD, Color.BLACK);
+            Font fontPhotoPlaceholder = new Font(Font.COURIER, 10, Font.NORMAL, dataLabelGray);
+            Font fontFooter = new Font(Font.COURIER, 7, Font.BOLD, Color.WHITE);
 
             // ==========================================================
+            // CREACIÓN DE COMPONENTES (Tu código se mantiene)
+            // ==========================================================
+
             // ENCABEZADO
-            // ==========================================================
             PdfPTable headerTable = new PdfPTable(1);
             headerTable.setWidthPercentage(100);
-            headerTable.getDefaultCell().setBorder(Rectangle.NO_BORDER);
-            headerTable.getDefaultCell().setHorizontalAlignment(Element.ALIGN_CENTER);
-            headerTable.setSpacingAfter(4f); // Espacio después del encabezado
+            headerTable.setSpacingAfter(5f);
+            addCellToTable(headerTable, "LICENCIA NACIONAL DE CONDUCIR", fontHeader, Element.ALIGN_CENTER, Rectangle.NO_BORDER);
+            addCellToTable(headerTable, "Santa Fe", fontSubHeader, Element.ALIGN_CENTER, Rectangle.NO_BORDER);
+            PdfPCell lineCell = new PdfPCell();
+            lineCell.setBorder(Rectangle.BOTTOM);
+            lineCell.setBorderWidth(0.5f);
+            lineCell.setBorderColor(lightGrayBorder);
+            headerTable.addCell(lineCell);
 
-            headerTable.addCell(new Phrase("REPÚBLICA ARGENTINA", fontHeader));
-            headerTable.addCell(new Phrase("LICENCIA NACIONAL DE CONDUCIR", fontTitle));
+            // CUERPO PRINCIPAL
+            PdfPTable bodyTable = new PdfPTable(new float[]{0.3f, 0.7f});
+            bodyTable.setWidthPercentage(100);
+            PdfPCell photoCell = new PdfPCell(new Phrase("Foto", fontPhotoPlaceholder));
+            photoCell.setBorder(Rectangle.BOX);
+            photoCell.setBorderColor(Color.GRAY);
+            photoCell.setBackgroundColor(photoBgGray);
+            photoCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            photoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            photoCell.setFixedHeight(80f);
+            bodyTable.addCell(photoCell);
 
-            // Borde inferior debajo del encabezado
-            PdfPCell borderCell = new PdfPCell();
-            borderCell.setBorder(Rectangle.BOTTOM);
-            borderCell.setBorderColor(lightGray); // Color gris claro
-            borderCell.setBorderWidth(0.5f); // Ancho del borde en puntos
-            borderCell.setPadding(0); // Sin padding extra para el borde
-            borderCell.setFixedHeight(1f); // Asegura que la celda tenga un alto mínimo para el borde
-            headerTable.addCell(borderCell);
-
-            innerCardTable.addCell(headerTable);
-
-            // ==========================================================
-            // CONTENIDO PRINCIPAL (Datos de la licencia y Firma)
-            // ==========================================================
-            PdfPTable mainContentTable = new PdfPTable(new float[]{0.68f, 0.32f}); // Proporciones para datos y firma
-            mainContentTable.setWidthPercentage(100);
-            mainContentTable.getDefaultCell().setBorder(Rectangle.NO_BORDER);
-            mainContentTable.getDefaultCell().setPadding(0); // Padding se maneja dentro de los elementos
-
-            // Celda para los datos de la licencia (columna izquierda)
             PdfPCell dataCell = new PdfPCell();
             dataCell.setBorder(Rectangle.NO_BORDER);
-            dataCell.setPadding(0);
-            dataCell.setPaddingLeft(2f); // Pequeño padding para el texto
-
-            // Agrega los datos a la celda de datos usando Paragraphs con Chunks
-            dataCell.addElement(createDataParagraph("N° Licencia: ", String.valueOf(licencia.getId()), fontLabel, fontValue));
+            dataCell.setPaddingLeft(5f);
+            PdfPTable topDataRow = new PdfPTable(new float[]{0.6f, 0.4f});
+            topDataRow.setWidthPercentage(100);
+            topDataRow.addCell(createDataPhrase("N° Licencia: ", String.valueOf(licencia.getDni()), fontLabel, fontValue));
+            String classesString = licencia.getLicenseClasses() != null ?
+                    licencia.getLicenseClasses().stream().map(LicenseClass::name).collect(Collectors.joining(" ")): "";
+            Phrase classPhrase = new Phrase();
+            classPhrase.add(new Chunk("Clase(s): ", fontLabel));
+            classPhrase.add(new Chunk("[" + classesString + "]", fontClass));
+            PdfPCell classCell = new PdfPCell(classPhrase);
+            classCell.setBorder(Rectangle.NO_BORDER);
+            classCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+            topDataRow.addCell(classCell);
+            dataCell.addElement(topDataRow);
             dataCell.addElement(createDataParagraph("Apellido: ", licencia.getLast_name(), fontLabel, fontValue));
             dataCell.addElement(createDataParagraph("Nombre: ", licencia.getFirst_name(), fontLabel, fontValue));
             dataCell.addElement(createDataParagraph("Domicilio: ", licencia.getAddress(), fontLabel, fontValue));
             dataCell.addElement(createDataParagraph("Fecha de Nacimiento: ", licencia.getBirthDate().format(DATE_FORMATTER), fontLabel, fontValue));
-            dataCell.addElement(createDataParagraph("Nacionalidad: ", "ARGENTINA", fontLabel, fontValue));
+            PdfPTable bottomDataRow = new PdfPTable(2);
+            bottomDataRow.setWidthPercentage(100);
+            bottomDataRow.addCell(createDataPhrase("Otorgamiento: ", licencia.getIssuanceDate().format(DATE_FORMATTER), fontLabel, fontValue));
+            bottomDataRow.addCell(createDataPhrase("Vencimiento: ", licencia.getExpirationDate().format(DATE_FORMATTER), fontLabel, fontValueBold));
+            dataCell.addElement(bottomDataRow);
+            bodyTable.addCell(dataCell);
 
-            // Clase(s) de licencia con fuente más grande
-            Paragraph classParagraph = new Paragraph();
-            classParagraph.setLeading(fontClass.getSize() * 1.2f); // Ajustar leading si es necesario
-            classParagraph.add(new Chunk("Clase(s): ", fontLabel));
-            // Concatenar las clases de licencia si es una lista
-            String classesString = licencia.getLicenseClasses() != null ?
-                    licencia.getLicenseClasses().stream()
-                            .map(LicenseClass::name) // Asumiendo que LicenseClass es un enum
-                            .map(String::toUpperCase)
-                            .collect(java.util.stream.Collectors.joining(", "))
-                    : "";
-            classParagraph.add(new Chunk(classesString, fontClass));
-            dataCell.addElement(classParagraph);
-
-            mainContentTable.addCell(dataCell);
-
-            // Celda para las observaciones (columna derecha)
-            PdfPCell observationsCell = new PdfPCell();
-            observationsCell.setBorder(Rectangle.NO_BORDER);
-            observationsCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            observationsCell.setVerticalAlignment(Element.ALIGN_BOTTOM); // Alinea al final de la celda
-            observationsCell.setPadding(0);
-            observationsCell.setPaddingBottom(1f); // Pequeño padding inferior para separar del borde
-            if(licencia.getObvservations() == null){
-                observationsCell.addElement(new Paragraph("No hay observaciones", fontSmall));
-            }
-            else observationsCell.addElement(new Paragraph(licencia.getObvservations(), fontSmall));
-
-
-            mainContentTable.addCell(observationsCell);
-            innerCardTable.addCell(mainContentTable);
-
-            // ==========================================================
-            // FOOTER (Fechas de otorgamiento, vencimiento, organismo)
-            // ==========================================================
-            PdfPTable footerTable = new PdfPTable(3); // 3 columnas
+            // PIE DE PÁGINA
+            PdfPTable footerTable = new PdfPTable(2);
             footerTable.setWidthPercentage(100);
-            footerTable.setSpacingBefore(4f); // Espacio antes del footer
-            footerTable.getDefaultCell().setBorder(Rectangle.NO_BORDER);
-            footerTable.getDefaultCell().setPadding(0); // Resetear padding por defecto
+            PdfPCell securityCell = new PdfPCell(new Phrase("SEGURIDAD VIAL", fontFooter));
+            securityCell.setBackgroundColor(primaryBlue);
+            securityCell.setBorder(Rectangle.NO_BORDER);
+            securityCell.setPadding(4f);
+            securityCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+            securityCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            Paragraph ministryLines = new Paragraph();
+            ministryLines.add(new Phrase("Ministerio de Transporte\n", fontFooter));
+            ministryLines.add(new Phrase("República Argentina", fontFooter));
+            PdfPCell ministryCell = new PdfPCell(ministryLines);
+            ministryCell.setBackgroundColor(primaryBlue);
+            ministryCell.setBorder(Rectangle.NO_BORDER);
+            ministryCell.setPadding(4f);
+            ministryCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            ministryCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            footerTable.addCell(securityCell);
+            footerTable.addCell(ministryCell);
 
-            // Borde superior para el footer (similar a la línea en el HTML)
-            PdfPCell topBorderCell = new PdfPCell();
-            topBorderCell.setBorder(Rectangle.TOP);
-            topBorderCell.setBorderColor(lightGray);
-            topBorderCell.setBorderWidth(0.5f);
-            topBorderCell.setPaddingTop(1f);
-            topBorderCell.setFixedHeight(1f);
-            topBorderCell.setColspan(3); // Que ocupe las 3 columnas
-            footerTable.addCell(topBorderCell);
+            // ==========================================================
+            // ENSAMBLAJE FINAL (SECCIÓN CORREGIDA)
+            // ==========================================================
+            // En lugar de añadir todo a una celda, creamos una tabla principal
+            // que contendrá la tarjeta completa, con un borde exterior.
+            PdfPTable cardBorderTable = new PdfPTable(1);
+            cardBorderTable.setWidthPercentage(100);
 
-            // Celda de Otorgamiento
-            PdfPCell cellOtorgamiento = new PdfPCell();
-            cellOtorgamiento.setBorder(Rectangle.NO_BORDER);
-            cellOtorgamiento.setHorizontalAlignment(Element.ALIGN_LEFT);
-            cellOtorgamiento.addElement(createDataParagraph("Otorgamiento: ", licencia.getIssuanceDate().format(DATE_FORMATTER), fontLabel, fontValue));
-            footerTable.addCell(cellOtorgamiento);
+            PdfPCell cardCell = new PdfPCell();
+            cardCell.setBorder(Rectangle.BOX); // Borde exterior de la tarjeta
+            cardCell.setBorderColor(primaryBlue);
+            cardCell.setBorderWidth(1.5f);
+            cardCell.setPadding(0); // El padding se maneja adentro
 
-            // Celda de Vencimiento
-            PdfPCell cellVencimiento = new PdfPCell();
-            cellVencimiento.setBorder(Rectangle.NO_BORDER);
-            cellVencimiento.setHorizontalAlignment(Element.ALIGN_LEFT);
-            cellVencimiento.addElement(createDataParagraph("Vencimiento:      ", licencia.getExpirationDate().format(DATE_FORMATTER), fontLabel, fontValue));
-            footerTable.addCell(cellVencimiento);
+            // Tabla interna para organizar header, body y footer y evitar que el footer se caiga
+            PdfPTable innerLayout = new PdfPTable(1);
+            innerLayout.setWidthPercentage(100);
 
-            // Celda de Organismo
-            PdfPCell cellOrganismo = new PdfPCell();
-            cellOrganismo.setBorder(Rectangle.NO_BORDER);
-            cellOrganismo.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            cellOrganismo.addElement(createDataParagraph("Organismo: ", "MUNI. DE SANTA FE", fontLabel, fontValue));
-            footerTable.addCell(cellOrganismo);
+            // Celda para header y body con padding
+            PdfPCell contentCell = new PdfPCell();
+            contentCell.setBorder(Rectangle.NO_BORDER);
+            contentCell.setPadding(8f);
+            contentCell.addElement(headerTable);
+            contentCell.addElement(bodyTable);
+            innerLayout.addCell(contentCell);
 
-            innerCardTable.addCell(footerTable); // Añadir la tabla del footer a la tabla interna de la tarjeta
+            // Celda para el footer, sin padding para que el color azul llene el espacio
+            PdfPCell footerWrapperCell = new PdfPCell(footerTable);
+            footerWrapperCell.setBorder(Rectangle.NO_BORDER);
+            footerWrapperCell.setPadding(0);
+            innerLayout.addCell(footerWrapperCell);
 
-            cardContainer.addCell(innerCardTable); // Añadir la tabla interna al contenedor principal
+            cardCell.addElement(innerLayout);
+            cardBorderTable.addCell(cardCell);
 
-            document.add(cardContainer); // Finalmente añadir el contenedor principal al documento
+            document.add(cardBorderTable);
 
         } finally {
             document.close();
         }
-
         return os.toByteArray();
     }
 
-    /**
-     * Helper method to create a Paragraph with a label (bold) and a value (normal).
-     * @param labelText The label text.
-     * @param valueText The value text.
-     * @param labelFont The font for the label.
-     * @param valueFont The font for the value.
-     * @return A Paragraph containing the styled label and value.
-     */
-    private Paragraph createDataParagraph(String labelText, String valueText, Font labelFont, Font valueFont) {
+    // ==========================================================
+    // MÉTODOS HELPER (Tus métodos se mantienen)
+    // ==========================================================
+
+    private Paragraph createDataParagraph(String label, String value, Font labelFont, Font valueFont) {
         Paragraph p = new Paragraph();
-        p.setLeading(labelFont.getSize() * 1.1f); // Reducido de 1.2f a 1.1f para compactar
-        p.add(new Chunk(labelText, labelFont));
-        p.add(new Chunk(valueText.toUpperCase(), valueFont));
-        p.setSpacingAfter(0.5f); // Pequeño espacio para separar líneas
+        p.setLeading(8f);
+        p.add(new Chunk(label, labelFont));
+        p.add(new Chunk(value.toUpperCase(), valueFont));
         return p;
+    }
+
+    private PdfPCell createDataPhrase(String label, String value, Font labelFont, Font valueFont) {
+        Phrase phrase = new Phrase();
+        phrase.add(new Chunk(label, labelFont));
+        phrase.add(new Chunk(value.toUpperCase(), valueFont));
+        PdfPCell cell = new PdfPCell(phrase);
+        cell.setBorder(Rectangle.NO_BORDER);
+        return cell;
+    }
+
+    private void addCellToTable(PdfPTable table, String text, Font font, int alignment, int border) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setHorizontalAlignment(alignment);
+        cell.setBorder(border);
+        table.addCell(cell);
     }
 }

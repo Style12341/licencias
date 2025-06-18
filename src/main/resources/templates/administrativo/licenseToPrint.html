@@ -8,19 +8,20 @@
     <style>
         /* Tus estilos actuales */
         .license-card {
-            border: 2px solid #198754;
+            border: 2px solid #0796D3;
             border-radius: 15px;
-            padding: 2rem;
             background-color: #f8f9fa;
             max-width: 800px;
             margin: auto;
             font-family: 'Courier New', Courier, monospace;
         }
         .license-header {
+            padding: 2rem;
             text-align: center;
             border-bottom: 2px solid #dee2e6;
             margin-bottom: 1.5rem;
             padding-bottom: 1rem;
+            color: #0796D3
         }
         .license-photo {
             width: 150px;
@@ -32,6 +33,11 @@
             justify-content: center;
             font-size: 1.2rem;
             color: #6c757d;
+        }
+        .license-data {
+            padding: 2rem;
+            display: flex;
+            flex-direction: row;
         }
         .data-label {
             margin-left: 20px;
@@ -46,6 +52,22 @@
             bottom: 20px;
             right: 20px;
             z-index: 1000; /* Asegura que esté por encima de otros elementos */
+        }
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .license-footer{
+            padding: 2px;
+            background-color: #0796D3;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            border-radius: 15px;
         }
         /* Estilos para la impresión */
         @media print {
@@ -102,32 +124,33 @@
     <div class="printable-area">
         <div class="license-card">
             <div class="license-header">
-                <h3>REPÚBLICA ARGENTINA</h3>
-                <h4>LICENCIA NACIONAL DE CONDUCIR</h4>
+                <h3 class="fw-bold">LICENCIA NACIONAL DE CONDUCIR</h3>
+                <h4><span th:text="${licencia.city}"></span></h4>
             </div>
-            <div class="row">
-                <div class="col-md-8">
-                    <p><span class="data-label">N° Licencia:</span> <span class="data-value" th:text="${licencia.id}"></span></p>
+            <div class="license-data">
+                <div class="license-photo col-md-4 text-center">Foto</div>
+                <div class="col-md-9">
+                    <div class="flex-container">
+                        <p><span class="data-label">N° Licencia:</span> <span class="data-value" th:text="${licencia.dni}"></span></p>
+                        <p><span class="data-label">Clase(s):</span> <span class="data-value fs-4 fw-bold" th:text="${licencia.licenseClasses}"></span></p>
+                    </div>
                     <p><span class="data-label">Apellido:</span> <span class="data-value" th:text="${licencia.last_name}"></span></p>
                     <p><span class="data-label">Nombre:</span> <span class="data-value" th:text="${licencia.first_name}"></span></p>
                     <p><span class="data-label">Domicilio:</span> <span class="data-value" th:text="${licencia.address}"></span></p>
                     <p><span class="data-label">Fecha de Nacimiento:</span> <span class="data-value" th:text="${#temporals.format(licencia.birthDate, 'dd/MM/yyyy')}"></span></p>
-                    <p><span class="data-label">Nacionalidad:</span> <span class="data-value">ARGENTINA</span></p>
-                    <p><span class="data-label">Clase(s):</span> <span class="data-value fs-4 fw-bold" th:text="${licencia.licenseClasses}"></span></p>
-                </div>
-                <div class="col-md-4 mt-auto text-center">
-                    <p th:if="${#strings.isEmpty(licencia.obvservations)}" class="mt-1"><small>No hay observaciones</small></p>
+                    <div class="flex-container">
+                        <p><span class="data-label">Otorgamiento:</span> <span class="data-value" th:text="${#temporals.format(licencia.issuanceDate, 'dd/MM/yyyy')}"></span></p>
+                        <p><span class="data-label">Vencimiento:</span> <span class="data-value fw-bold" th:text="${#temporals.format(licencia.expirationDate, 'dd/MM/yyyy')}"></span></p>
+                    </div>
                 </div>
             </div>
-            <div class="row mt-3 pt-3 border-top">
-                <div class="col">
-                    <p><span class="data-label">Otorgamiento:</span> <span class="data-value" th:text="${#temporals.format(licencia.issuanceDate, 'dd/MM/yyyy')}"></span></p>
-                </div>
-                <div class="col">
-                    <p><span class="data-label">Vencimiento:</span> <span class="data-value fw-bold" th:text="${#temporals.format(licencia.expirationDate, 'dd/MM/yyyy')}"></span></p>
-                </div>
-                <div class="col">
-                    <p><span class="data-label">Organismo:</span> <span class="data-value">MUNI. DE SANTA FE</span></p>
+            <div class="license-footer">
+                <div class="license-footer p-1">
+                    <p class="fw-bold">SEGURIDAD VIAL</p>
+                    <div class="column">
+                        <p class="fw-bold mb-0">Ministerio de Transporte</p>
+                        <p class="fw-bold">República Argentina</p>
+                    </div>
                 </div>
             </div>
         </div>

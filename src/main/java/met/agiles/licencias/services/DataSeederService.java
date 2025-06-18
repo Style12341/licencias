@@ -173,7 +173,7 @@ public class DataSeederService implements CommandLineRunner {
             license1.setCity(holder1.getCity());
             license1.setBirthDate(holder1.getBirthDate());
             license1.setIssuanceDate(holder1.getBirthDate().withYear(LocalDate.now().getYear()));
-            license1.setExpirationDate(LocalDate.now().plusYears(4));
+            license1.setExpirationDate(holder1.getBirthDate().withYear(LocalDate.now().getYear()).plusYears(4));
             license1.setLicenseClasses(List.of(LicenseClass.A));
             license1.setCost(licenseService.calcularCostoTotal(license1));
             licenseService.createLicense(license1);
@@ -188,7 +188,7 @@ public class DataSeederService implements CommandLineRunner {
             license2.setCity(holder1.getCity());
             license2.setBirthDate(holder1.getBirthDate());
             license2.setIssuanceDate(holder1.getBirthDate().withYear(LocalDate.now().getYear()));
-            license2.setExpirationDate(LocalDate.now().plusYears(4));
+            license2.setExpirationDate(holder1.getBirthDate().withYear(LocalDate.now().getYear()).plusYears(4));
             license2.setLicenseClasses(List.of(LicenseClass.B));
             license2.setCost(licenseService.calcularCostoTotal(license2));
             licenseService.createLicense(license2);
@@ -203,7 +203,7 @@ public class DataSeederService implements CommandLineRunner {
             license3.setCity(holder2.getCity());
             license3.setBirthDate(holder2.getBirthDate());
             license3.setIssuanceDate(holder2.getBirthDate().withYear(LocalDate.now().getYear()));
-            license3.setExpirationDate(LocalDate.now().plusYears(4));
+            license3.setExpirationDate(holder2.getBirthDate().withYear(LocalDate.now().getYear()).plusYears(4));
             license3.setLicenseClasses(List.of(LicenseClass.A));
             license3.setCost(licenseService.calcularCostoTotal(license3));
             licenseService.createLicense(license3);
@@ -218,8 +218,8 @@ public class DataSeederService implements CommandLineRunner {
             license4.setCity(holder2.getCity());
             license4.setBirthDate(holder2.getBirthDate());
             license4.setIssuanceDate(holder2.getBirthDate().withYear(LocalDate.now().getYear()));
-            license4.setExpirationDate(LocalDate.now().plusYears(4));
-            license4.setLicenseClasses(List.of(LicenseClass.A, LicenseClass.B, LicenseClass.C));
+            license4.setExpirationDate(holder2.getBirthDate().withYear(LocalDate.now().getYear()).plusYears(4));
+            license4.setLicenseClasses(List.of(LicenseClass.C));
             license4.setCost(licenseService.calcularCostoTotal(license4));
             licenseService.createLicense(license4);
 
