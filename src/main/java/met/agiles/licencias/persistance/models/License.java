@@ -4,11 +4,13 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 
+import org.hibernate.annotations.ColumnDefault;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import lombok.Builder.Default;
 import met.agiles.licencias.enums.LicenseClass;
 
 @Entity
@@ -71,6 +73,10 @@ public class License {
     @Column(name = "license_class")
     @Enumerated(EnumType.STRING)
     private List<LicenseClass> licenseClasses;
+
+    @Column()
+    @ColumnDefault("true")
+    private Boolean isValid = true;
 
     @Column()
     private String obvservations;
