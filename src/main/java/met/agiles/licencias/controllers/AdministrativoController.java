@@ -25,12 +25,14 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import met.agiles.licencias.persistance.models.Holder;
 import met.agiles.licencias.persistance.models.License;
 import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.HolderRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
+import met.agiles.licencias.services.LicenseReportService;
 import met.agiles.licencias.services.LicenseService;
 
 @Controller
@@ -243,5 +245,18 @@ public class AdministrativoController {
             logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id, e.getMessage());
             return new ResponseEntity<>("Error al guardar el método de pago", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Autowired
+    private LicenseReportService licenseReportService;
+
+    @GetMapping("/licencias/reporte/expiradas")
+    public String showExpirationDateRangesForm(Model model) {
+        return "administrativo/licenseExpirationReport";
+    }
+
+    @PostMapping("/license-report-by-expiration")
+    public void generateReport(@RequestParam("startDate") LocalDate startDate, @RequestParam("endDate") LocalDate endDate, HttpServletResponse response) throws IOException {
+        licenseReportService.generateReport(startDate, endDate, response);
     }
 }
