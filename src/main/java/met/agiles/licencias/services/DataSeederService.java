@@ -102,20 +102,20 @@ public class DataSeederService implements CommandLineRunner {
                     new LicensePricing(null, LicenseClass.C, 4, 35),
                     new LicensePricing(null, LicenseClass.C, 5, 47),
 
-                    new LicensePricing(null, LicenseClass.D, 1, 0),
-                    new LicensePricing(null, LicenseClass.D, 3, 0),
-                    new LicensePricing(null, LicenseClass.D, 4, 0),
-                    new LicensePricing(null, LicenseClass.D, 5, 0),
+                    new LicensePricing(null, LicenseClass.D, 1, 100),
+                    new LicensePricing(null, LicenseClass.D, 3, 100),
+                    new LicensePricing(null, LicenseClass.D, 4, 100),
+                    new LicensePricing(null, LicenseClass.D, 5, 100),
 
                     new LicensePricing(null, LicenseClass.E, 1, 29),
                     new LicensePricing(null, LicenseClass.E, 3, 39),
                     new LicensePricing(null, LicenseClass.E, 4, 44),
                     new LicensePricing(null, LicenseClass.E, 5, 59),
 
-                    new LicensePricing(null, LicenseClass.F, 1, 0),
-                    new LicensePricing(null, LicenseClass.F, 3, 0),
-                    new LicensePricing(null, LicenseClass.F, 4, 0),
-                    new LicensePricing(null, LicenseClass.F, 5, 0),
+                    new LicensePricing(null, LicenseClass.F, 1, 100),
+                    new LicensePricing(null, LicenseClass.F, 3, 100),
+                    new LicensePricing(null, LicenseClass.F, 4, 100),
+                    new LicensePricing(null, LicenseClass.F, 5, 100),
 
                     new LicensePricing(null, LicenseClass.G, 1, 20),
                     new LicensePricing(null, LicenseClass.G, 3, 25),
