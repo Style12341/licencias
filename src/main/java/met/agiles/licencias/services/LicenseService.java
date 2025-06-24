@@ -80,22 +80,16 @@ public class LicenseService {
             if (licenseRepository.findByDni(holder.getDni()).isEmpty() && holder.getEdad() < 21) {
                 license.setExpirationDate(today.plusYears(1));
                 license.setObvservations((license.getObvservations() != null ? license.getObvservations() + "\n" : "") + "Principiante por primeros 6 meses.");
-                System.out.println("1");
             } else if (holder.getEdad() < 21) {
                 license.setExpirationDate(today.plusYears(3));
-                System.out.println("2");
             } else if (holder.getEdad() >= 21 && holder.getEdad() < 46) {
                 license.setExpirationDate(today.plusYears(5));
-                System.out.println("3");
             } else if (holder.getEdad() >= 46 && holder.getEdad() < 60) {
                 license.setExpirationDate(today.plusYears(4));
-                System.out.println("4");
             } else if (holder.getEdad() >= 60 && holder.getEdad() < 70) {
                 license.setExpirationDate(today.plusYears(3));
-                System.out.println("5");
             } else {
                 license.setExpirationDate(today.plusYears(1));
-                System.out.println("6");
             }
     }
 
