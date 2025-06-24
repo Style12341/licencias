@@ -1,16 +1,22 @@
 package met.agiles.licencias.services;
 
+import jakarta.transaction.Transactional;
+import met.agiles.licencias.controllers.AdministrativoController;
 import met.agiles.licencias.enums.LicenseClass;
-import met.agiles.licencias.persistance.models.Holder;
-import met.agiles.licencias.persistance.models.License;
-import met.agiles.licencias.persistance.models.LicensePricing;
+import met.agiles.licencias.enums.PaymentMethod;
+import met.agiles.licencias.persistance.models.*;
 import met.agiles.licencias.persistance.repository.LicensePricingRepository;
 import met.agiles.licencias.persistance.repository.LicenseRepository;
+import met.agiles.licencias.persistance.repository.PaymentReceiptRepository;
+import met.agiles.licencias.persistance.repository.UsuarioRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.swing.plaf.synth.SynthOptionPaneUI;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
@@ -25,7 +31,10 @@ public class LicenseService {
     private LicensePricingRepository licensePricingRepository;
 
     @Autowired
-    private SystemMetricsAutoConfiguration systemMetricsAutoConfiguration;
+    private PaymentReceiptRepository paymentReceiptRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public List<License> getAllLicenses() {
         return licenseRepository.findAll();
@@ -98,8 +107,109 @@ public class LicenseService {
         return ( !today.isBefore(oneMonthBefore) && !today.isAfter(thisYearBirthday) );
     }
 
+    public boolean isValidAge(LocalDate birthDate, List<LicenseClass> licenseClasses) {
+        int age = Period.between(birthDate,LocalDate.now()).getYears();
+        //Log age
+        System.out.println("Age: " + age);
 
+        for (LicenseClass licenseClass : licenseClasses) {
+            // If licenseClass if C, D or E, then the holder must be at least 21 years old. Else he must be at least 17.
+            if (licenseClass == LicenseClass.C || licenseClass == LicenseClass.D || licenseClass == LicenseClass.E) {
+                if (age < 21) {
+                    return false;
+                }
+            } else {
+                if (age < 17) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
+    public boolean isValidFirstTimeForProfessionalLicense(String holderDni, LocalDate birthDate, List<LicenseClass> licenseClasses) {
+        int age = Period.between(birthDate,LocalDate.now()).getYears();
 
+        if (licenseClasses.contains(LicenseClass.C) || licenseClasses.contains(LicenseClass.D) || licenseClasses.contains(LicenseClass.E)) {
+            List<License> licenses = licenseRepository.findByDni(holderDni);
+            boolean hasValidBClassLicense = false;
+            for (License license : licenses) {
+                if (license.getLicenseClasses().contains(LicenseClass.B) && license.getIssuanceDate().isBefore(LocalDate.now().minusYears(1))) {
+                    hasValidBClassLicense = true;
+                }
+            }
+            boolean hasPreviousProfessionalLicense = false;
+            for (License license : licenses) {
+                if (license.getLicenseClasses().contains(LicenseClass.C) || license.getLicenseClasses().contains(LicenseClass.D) || license.getLicenseClasses().contains(LicenseClass.E)) {
+                    hasPreviousProfessionalLicense = true;
+                }
+            }
 
+            if(hasPreviousProfessionalLicense) return true; // Already has a professional license
+            if(hasValidBClassLicense && age<=65) return true; // First time making a professional license
+
+            // Log
+            System.out.println("Has valid B class license: " + hasValidBClassLicense);
+            System.out.println("Age: " + age);
+            System.out.println("Has previous professional license: " + hasPreviousProfessionalLicense);
+
+            return false;
+        }
+        return true; // Not a professional license
+    }
+
+    public List<License> searchFilteredLicenses(String dni, String apellido, String orden) {
+        List<License> todas = licenseRepository.findAll();
+
+        return todas.stream()
+                .filter(l -> dni == null || dni.isBlank() || l.getDni().contains(dni))
+                .filter(l -> apellido == null || apellido.isBlank() || l.getLast_name().toLowerCase().contains(apellido.toLowerCase()))
+                .sorted((l1, l2) -> {
+                    if ("desc".equalsIgnoreCase(orden)) {
+                        return l2.getIssuanceDate().compareTo(l1.getIssuanceDate());
+                    } else {
+                        return l1.getIssuanceDate().compareTo(l2.getIssuanceDate());
+                    }
+                })
+                .toList();
+    }
+
+    public boolean isFirstLicense(String dni) {
+        List<License> licenses = licenseRepository.findByDni(dni);
+        return licenses.isEmpty();
+    }
+
+    @Transactional // Asegura que ambas operaciones (guardar recibo y actualizar licencia) sean atómicas
+    public License assignPaymentToLicense(Long licenseId, PaymentMethod paymentMethod) {
+        License license = licenseRepository.findById(licenseId)
+                .orElseThrow(() -> new RuntimeException("Licencia no encontrada con ID: " + licenseId));
+
+        PaymentReceipt paymentReceipt = new PaymentReceipt();
+        paymentReceipt.setPaymentMethod(paymentMethod);
+
+        // Set the user to the current user logged
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
+        paymentReceipt.setAdministrativo(user);
+
+        paymentReceipt.setPaymentDate(LocalDate.now()); // Set the payment date to today
+
+        if(paymentReceipt.getAdministrativo() == null) {
+            throw new RuntimeException("Usuario administrativo no encontrado.");
+        }
+        if(paymentReceipt.getPaymentMethod() == null) {
+            throw new RuntimeException("Método de pago no especificado.");
+        }
+
+        paymentReceipt.setLicense(license); // Set the license for the payment receipt
+        PaymentReceipt savedPaymentReceipt = paymentReceiptRepository.save(paymentReceipt);
+
+        if(license.getPaymentReceipts().isEmpty()){
+            license.setPaymentReceipts(List.of(savedPaymentReceipt)); // Si no hay recibos, se crea una nueva lista
+        } else {
+            license.getPaymentReceipts().add(savedPaymentReceipt); // Agregar el nuevo recibo a la lista existente
+        }
+        return licenseRepository.save(license); // Guardar la licencia actualizada
+    }
 }

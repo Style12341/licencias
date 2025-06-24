@@ -1,36 +1,55 @@
 package met.agiles.licencias.controllers;
 
-import jakarta.validation.Valid;
-import met.agiles.licencias.dto.HolderRequestDto;
-import met.agiles.licencias.persistance.models.Holder;
-import met.agiles.licencias.services.HolderService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/api/holders")
+import jakarta.validation.Valid;
+import met.agiles.licencias.dto.HolderRequestDto;
+import met.agiles.licencias.enums.LicenseClass;
+import met.agiles.licencias.services.HolderService;
+
+@Controller
 public class HolderController {
 
-    @Autowired
-    private HolderService holderService;
+    private final HolderService holderService;
 
-    @PostMapping
-    public ResponseEntity<?> altaTitular(@RequestBody @Valid HolderRequestDto dto,
-                                         @AuthenticationPrincipal UserDetails userDetails) {
+    public HolderController(HolderService holderService) {
+        this.holderService = holderService;
+    }
+
+    @GetMapping("/administrativo/titulares/nuevo")
+    public String mostrarFormulario(Model model) {
+        model.addAttribute("holder", new HolderRequestDto());
+        model.addAttribute("title", "Alta de Titular");
+        model.addAttribute("licenseClasses", LicenseClass.values()); 
+        return "administrativo/titulares/nuevo";
+    }
+
+
+    @PostMapping("/administrativo/titulares/nuevo")
+    public String procesarFormulario(@ModelAttribute("holder") @Valid HolderRequestDto dto,
+                                     BindingResult result,
+                                     @AuthenticationPrincipal UserDetails userDetails,
+                                     Model model) {
+        if (result.hasErrors()) {
+            model.addAttribute("title", "Alta de Titular");
+            return "administrativo/titulares/nuevo";
+        }
+
         try {
-            Holder nuevo = holderService.createHolder(dto, userDetails.getUsername());
-            return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
+            holderService.createHolder(dto, userDetails.getUsername());
+            return "redirect:/administrativo/home";
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("title", "Alta de Titular");
+            return "administrativo/titulares/nuevo";
         }
     }
+
 }

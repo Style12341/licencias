@@ -1,17 +1,19 @@
 package met.agiles.licencias.persistance.models;
 
-import java.sql.Date;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 
+import org.hibernate.annotations.ColumnDefault;
+
+import org.hibernate.annotations.ColumnDefault;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import lombok.Builder.Default;
 import met.agiles.licencias.enums.LicenseClass;
-import org.springframework.cglib.core.Local;
 
 @Entity
 @Table(name = "licenses", schema="public")
@@ -19,19 +21,23 @@ import org.springframework.cglib.core.Local;
 @NoArgsConstructor
 @AllArgsConstructor
 public class License {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     // License metadata
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user; // User that created the license
-    
+
     @ManyToOne
     @JoinColumn(name = "holder_id")
     private Holder holder; // Refers to the license holder. Current data of the holder can be different than the data on the license.
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "license", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PaymentReceipt> paymentReceipts;
 
     // Printed license data
     @Column(nullable = false)
@@ -48,7 +54,7 @@ public class License {
 
     @Column(nullable = false)
     private String address;
-    
+
     @Column(nullable = false)
     private String city;
 
@@ -63,12 +69,16 @@ public class License {
 
     @ElementCollection
     @CollectionTable(
-        name = "license_classes",
-        joinColumns = @JoinColumn(name = "license_id")
+            name = "license_classes",
+            joinColumns = @JoinColumn(name = "license_id")
     )
     @Column(name = "license_class")
     @Enumerated(EnumType.STRING)
     private List<LicenseClass> licenseClasses;
+
+    @Column()
+    @ColumnDefault("true")
+    private Boolean isValid = true;
 
     @Column()
     private String obvservations;
@@ -81,4 +91,6 @@ public class License {
         return periodo.getYears();
     }
 
+    @Column()
+    private double cost; // Total cost of the license, including administrative fees
 }

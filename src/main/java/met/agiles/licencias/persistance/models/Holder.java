@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import met.agiles.licencias.enums.BloodType;
-import met.agiles.licencias.enums.LicenseClass;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -50,7 +49,7 @@ public class Holder {
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "administrative_id", nullable = false)
-    private User administrative;  // TODO: el administrativo es el user no?
+    private User administrative;
 
     public int getEdad() {
         LocalDate today = LocalDate.now();
