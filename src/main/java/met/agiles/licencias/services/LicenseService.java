@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @Service
 public class LicenseService {
-    
+    static final double LICENSE_COPY_COST = 50.0; // Cost for making a copy of a license
     @Autowired
     private LicenseRepository licenseRepository;
 
@@ -40,35 +40,49 @@ public class LicenseService {
     public List<License> getAllLicenses() {
         return licenseRepository.findAll();
     }
-    
+
     public License getLicenseById(Long id) {
         return licenseRepository.findById(id).orElse(null);
     }
 
     @Transactional
     public License createLicense(License license) {
-        this.calcularExpiracion(license);
-        this.calcularCostoTotal(license);
+        this.setExpiracionLicencia(license);
+        double cost = this.calcularCostoTotal(license);
+        license.setCost(cost);
         Holder holder = license.getHolder();
         this.invalidateActiveLicense(holder);
         return licenseRepository.save(license);
     }
-    
+
     public License updateLicense(License license) {
         return licenseRepository.save(license);
     }
-    
+
     public void deleteLicense(Long id) {
         licenseRepository.deleteById(id);
     }
 
     public double calcularCostoTotal(License license) {
+        if (license.isCopy()) {
+            return LICENSE_COPY_COST; // If it's a copy, return the fixed cost
+        }
         double total = 0;
         for (LicenseClass clase : license.getLicenseClasses()) {
-            LicensePricing licensePricing = licensePricingRepository.findByLicenseClassAndValidityYears(clase, license.getVigency());
+            LicensePricing licensePricing = licensePricingRepository.findByLicenseClassAndValidityYears(clase,
+                    license.getVigency());
             total += licensePricing.getPrice();
         }
-        return total + LicensePricing.getBasePrice(); //+ gastos administrativos
+        return total + LicensePricing.getBasePrice(); // + gastos administrativos
+    }
+
+    public void makeLicenseCopy(License originalLicense, User administrativo) {
+        License newLicense = new License();
+        newLicense.copyLicenseAttributes(originalLicense); // This now copies everything including holder
+        newLicense.setVersion(originalLicense.getVersion() + 1);
+        newLicense.setUser(administrativo);
+        newLicense.setIssuanceDate(LocalDate.now());
+        this.createLicense(newLicense); // This will also calculate expiration and cost
     }
 
     public LicenseService(LicensePricingRepository pricingRepository, LicenseRepository licenseRepository) {
@@ -76,25 +90,26 @@ public class LicenseService {
         this.licenseRepository = licenseRepository;
     }
 
-    public void calcularExpiracion(License license) {
+    public void setExpiracionLicencia(License license) {
 
         LocalDate today = LocalDate.now();
         Holder holder = license.getHolder();
 
-            if (licenseRepository.findByDni(holder.getDni()).isEmpty() && holder.getEdad() < 21) {
-                license.setExpirationDate(today.plusYears(1));
-                license.setObvservations((license.getObvservations() != null ? license.getObvservations() + "\n" : "") + "Principiante por primeros 6 meses.");
-            } else if (holder.getEdad() < 21) {
-                license.setExpirationDate(today.plusYears(3));
-            } else if (holder.getEdad() >= 21 && holder.getEdad() < 46) {
-                license.setExpirationDate(today.plusYears(5));
-            } else if (holder.getEdad() >= 46 && holder.getEdad() < 60) {
-                license.setExpirationDate(today.plusYears(4));
-            } else if (holder.getEdad() >= 60 && holder.getEdad() < 70) {
-                license.setExpirationDate(today.plusYears(3));
-            } else {
-                license.setExpirationDate(today.plusYears(1));
-            }
+        if (licenseRepository.findByDni(holder.getDni()).isEmpty() && holder.getEdad() < 21) {
+            license.setExpirationDate(today.plusYears(1));
+            license.setObvservations((license.getObvservations() != null ? license.getObvservations() + "\n" : "")
+                    + "Principiante por primeros 6 meses.");
+        } else if (holder.getEdad() < 21) {
+            license.setExpirationDate(today.plusYears(3));
+        } else if (holder.getEdad() >= 21 && holder.getEdad() < 46) {
+            license.setExpirationDate(today.plusYears(5));
+        } else if (holder.getEdad() >= 46 && holder.getEdad() < 60) {
+            license.setExpirationDate(today.plusYears(4));
+        } else if (holder.getEdad() >= 60 && holder.getEdad() < 70) {
+            license.setExpirationDate(today.plusYears(3));
+        } else {
+            license.setExpirationDate(today.plusYears(1));
+        }
     }
 
     public boolean isValidBirthDateWindow(LocalDate birthDate) {
@@ -102,16 +117,17 @@ public class LicenseService {
         LocalDate thisYearBirthday = birthDate.withYear(today.getYear());
         LocalDate oneMonthBefore = thisYearBirthday.minusMonths(1);
 
-        return ( !today.isBefore(oneMonthBefore) && !today.isAfter(thisYearBirthday) );
+        return (!today.isBefore(oneMonthBefore) && !today.isAfter(thisYearBirthday));
     }
 
     public boolean isValidAge(LocalDate birthDate, List<LicenseClass> licenseClasses) {
-        int age = Period.between(birthDate,LocalDate.now()).getYears();
-        //Log age
+        int age = Period.between(birthDate, LocalDate.now()).getYears();
+        // Log age
         System.out.println("Age: " + age);
 
         for (LicenseClass licenseClass : licenseClasses) {
-            // If licenseClass if C, D or E, then the holder must be at least 21 years old. Else he must be at least 17.
+            // If licenseClass if C, D or E, then the holder must be at least 21 years old.
+            // Else he must be at least 17.
             if (licenseClass == LicenseClass.C || licenseClass == LicenseClass.D || licenseClass == LicenseClass.E) {
                 if (age < 21) {
                     return false;
@@ -125,26 +141,33 @@ public class LicenseService {
         return true;
     }
 
-    public boolean isValidFirstTimeForProfessionalLicense(String holderDni, LocalDate birthDate, List<LicenseClass> licenseClasses) {
-        int age = Period.between(birthDate,LocalDate.now()).getYears();
+    public boolean isValidFirstTimeForProfessionalLicense(String holderDni, LocalDate birthDate,
+            List<LicenseClass> licenseClasses) {
+        int age = Period.between(birthDate, LocalDate.now()).getYears();
 
-        if (licenseClasses.contains(LicenseClass.C) || licenseClasses.contains(LicenseClass.D) || licenseClasses.contains(LicenseClass.E)) {
+        if (licenseClasses.contains(LicenseClass.C) || licenseClasses.contains(LicenseClass.D)
+                || licenseClasses.contains(LicenseClass.E)) {
             List<License> licenses = licenseRepository.findByDni(holderDni);
             boolean hasValidBClassLicense = false;
             for (License license : licenses) {
-                if (license.getLicenseClasses().contains(LicenseClass.B) && license.getIssuanceDate().isBefore(LocalDate.now().minusYears(1))) {
+                if (license.getLicenseClasses().contains(LicenseClass.B)
+                        && license.getIssuanceDate().isBefore(LocalDate.now().minusYears(1))) {
                     hasValidBClassLicense = true;
                 }
             }
             boolean hasPreviousProfessionalLicense = false;
             for (License license : licenses) {
-                if (license.getLicenseClasses().contains(LicenseClass.C) || license.getLicenseClasses().contains(LicenseClass.D) || license.getLicenseClasses().contains(LicenseClass.E)) {
+                if (license.getLicenseClasses().contains(LicenseClass.C)
+                        || license.getLicenseClasses().contains(LicenseClass.D)
+                        || license.getLicenseClasses().contains(LicenseClass.E)) {
                     hasPreviousProfessionalLicense = true;
                 }
             }
 
-            if(hasPreviousProfessionalLicense) return true; // Already has a professional license
-            if(hasValidBClassLicense && age<=65) return true; // First time making a professional license
+            if (hasPreviousProfessionalLicense)
+                return true; // Already has a professional license
+            if (hasValidBClassLicense && age <= 65)
+                return true; // First time making a professional license
 
             // Log
             System.out.println("Has valid B class license: " + hasValidBClassLicense);
@@ -161,7 +184,8 @@ public class LicenseService {
 
         return todas.stream()
                 .filter(l -> dni == null || dni.isBlank() || l.getDni().contains(dni))
-                .filter(l -> apellido == null || apellido.isBlank() || l.getLast_name().toLowerCase().contains(apellido.toLowerCase()))
+                .filter(l -> apellido == null || apellido.isBlank()
+                        || l.getLast_name().toLowerCase().contains(apellido.toLowerCase()))
                 .sorted((l1, l2) -> {
                     if ("desc".equalsIgnoreCase(orden)) {
                         return l2.getIssuanceDate().compareTo(l1.getIssuanceDate());
@@ -171,13 +195,13 @@ public class LicenseService {
                 })
                 .toList();
     }
-    
+
     @Transactional
     public void invalidateActiveLicense(Holder holder) {
         String dni = holder.getDni();
         Optional<License> activeLicenseOpt = this.getActiveLicenseByHolderDni(dni);
         if (activeLicenseOpt.isPresent()) {
-            //Log that the active license is being invalidated
+            // Log that the active license is being invalidated
             Logger logger = LoggerFactory.getLogger(AdministrativoController.class);
             logger.info("Invalidating active license for holder with DNI: " + dni);
             License activeLicense = activeLicenseOpt.get();
@@ -185,14 +209,18 @@ public class LicenseService {
             licenseRepository.save(activeLicense); // Save the changes
         }
     }
+
     public boolean isFirstLicense(String dni) {
         List<License> licenses = licenseRepository.findByDni(dni);
         return licenses.isEmpty();
     }
+
     public Optional<License> getActiveLicenseByHolderDni(String dni) {
         return licenseRepository.findByDniAndExpirationDateGreaterThanEqualAndIsValidTrue(dni, LocalDate.now());
     }
-    @Transactional // Asegura que ambas operaciones (guardar recibo y actualizar licencia) sean atómicas
+
+    @Transactional // Asegura que ambas operaciones (guardar recibo y actualizar licencia) sean
+                   // atómicas
     public License assignPaymentToLicense(Long licenseId, PaymentMethod paymentMethod) {
         License license = licenseRepository.findById(licenseId)
                 .orElseThrow(() -> new RuntimeException("Licencia no encontrada con ID: " + licenseId));
@@ -208,17 +236,17 @@ public class LicenseService {
 
         paymentReceipt.setPaymentDate(LocalDate.now()); // Set the payment date to today
 
-        if(paymentReceipt.getAdministrativo() == null) {
+        if (paymentReceipt.getAdministrativo() == null) {
             throw new RuntimeException("Usuario administrativo no encontrado.");
         }
-        if(paymentReceipt.getPaymentMethod() == null) {
+        if (paymentReceipt.getPaymentMethod() == null) {
             throw new RuntimeException("Método de pago no especificado.");
         }
 
         paymentReceipt.setLicense(license); // Set the license for the payment receipt
         PaymentReceipt savedPaymentReceipt = paymentReceiptRepository.save(paymentReceipt);
 
-        if(license.getPaymentReceipts().isEmpty()){
+        if (license.getPaymentReceipts().isEmpty()) {
             license.setPaymentReceipts(List.of(savedPaymentReceipt)); // Si no hay recibos, se crea una nueva lista
         } else {
             license.getPaymentReceipts().add(savedPaymentReceipt); // Agregar el nuevo recibo a la lista existente
