@@ -120,7 +120,12 @@
       </div>
     </nav>
     <div class="container mt-5">
-      <h2 class="mb-4" th:text="${title}"></h2>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0" th:text="${title}"></h2>
+        <a href="/administrativo/titulares/nuevo" class="btn btn-outline-success">
+          <i class="fas fa-user-plus"></i> Nuevo Titular
+        </a>
+      </div>
 
       <form th:object="${license}" method="post" action="/administrativo/licencias" class="row g-3">
         <div class="col-md-6">
