@@ -565,4 +565,160 @@ class LicenseServiceTest {
             return correctIssuanceDate && correctExpirationDate && correctCost;
         }));
     }
+
+    @Test
+    public void testIsExpired_cuandoLicenciaEstaVencida_deberiaRetornarTrue() {
+        // Arrange
+        LocalDate today = LocalDate.now();
+
+        License expiredLicense = new License();
+        expiredLicense.setExpirationDate(today.minusDays(1)); // Expired yesterday
+
+        // Act
+        boolean result = expiredLicense.isExpired();
+
+        // Assert
+        assertTrue(result, "License should be expired when expiration date is in the past");
+    }
+
+    @Test
+    public void testIsExpired_cuandoLicenciaNoEstaVencida_deberiaRetornarFalse() {
+        // Arrange
+        LocalDate today = LocalDate.now();
+
+        License validLicense = new License();
+        validLicense.setExpirationDate(today.plusDays(1)); // Expires tomorrow
+
+        // Act
+        boolean result = validLicense.isExpired();
+
+        // Assert
+        assertFalse(result, "License should not be expired when expiration date is in the future");
+    }
+
+    @Test
+    public void testIsExpired_cuandoLicenciaVenceHoy_deberiaRetornarFalse() {
+        // Arrange
+        LocalDate today = LocalDate.now();
+
+        License todayExpiringLicense = new License();
+        todayExpiringLicense.setExpirationDate(today); // Expires today
+
+        // Act
+        boolean result = todayExpiringLicense.isExpired();
+
+        // Assert
+        assertFalse(result, "License should not be expired when expiration date is today");
+    }
+
+    @Test
+    public void testIsCopy_cuandoVersionEsMayorA1_deberiaRetornarTrue() {
+        // Arrange
+        License copyLicense = new License();
+        copyLicense.setVersion(2); // This is a copy
+
+        // Act
+        boolean result = copyLicense.isCopy();
+
+        // Assert
+        assertTrue(result, "License should be considered a copy when version > 1");
+    }
+
+    @Test
+    public void testIsCopy_cuandoVersionEs1_deberiaRetornarFalse() {
+        // Arrange
+        License originalLicense = new License();
+        originalLicense.setVersion(1); // Original license
+
+        // Act
+        boolean result = originalLicense.isCopy();
+
+        // Assert
+        assertFalse(result, "License should not be considered a copy when version = 1");
+    }
+
+    @Test
+    public void testMakeLicenseCopy_cuandoLicenciaOriginalEsValida_deberiaCrearCopia() {
+        // Arrange
+        LocalDate today = LocalDate.now();
+
+        Holder holder = new Holder();
+        holder.setDni("12345678");
+        holder.setBirthDate(today.minusYears(30));
+
+        License validOriginalLicense = new License();
+        validOriginalLicense.setId(1L);
+        validOriginalLicense.setDni("12345678");
+        validOriginalLicense.setIsValid(true); // Valid
+        validOriginalLicense.setExpirationDate(today.plusYears(2)); // Not expired
+        validOriginalLicense.setVersion(1); // Original
+        validOriginalLicense.setHolder(holder);
+        validOriginalLicense.setLicenseClasses(List.of(LicenseClass.B));
+
+        User administrativo = new User();
+        administrativo.setId(1L);
+        administrativo.setUsername("admin");
+
+        // Mock repository behavior
+        when(licenseRepository.findByDniAndExpirationDateGreaterThanEqualAndIsValidTrue("12345678", today))
+                .thenReturn(Optional.empty());
+        when(licenseRepository.findByDni("12345678")).thenReturn(List.of(validOriginalLicense));
+        when(licenseRepository.save(any(License.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        licenseService.makeLicenseCopy(validOriginalLicense, administrativo);
+
+        // Assert
+        verify(licenseRepository).save(argThat(newLicense ->
+                newLicense.getDni().equals("12345678") &&
+                        newLicense.getIsValid().equals(true) &&
+                        newLicense.getVersion().equals(2) && // Version should be incremented
+                        newLicense.isCopy() && // Should be identified as a copy
+                        newLicense.getUser().equals(administrativo) &&
+                        newLicense.getIssuanceDate().equals(today) // New issuance date
+        ));
+    }
+
+    @Test
+    public void testLicenseValidation_escenarioCompleto_licenciaVencidaVsValida() {
+        // Arrange
+        LocalDate today = LocalDate.now();
+
+        Holder holder = new Holder();
+        holder.setDni("99999999");
+        holder.setBirthDate(today.minusYears(25));
+
+        // Expired license
+        License expiredLicense = new License();
+        expiredLicense.setId(1L);
+        expiredLicense.setDni("99999999");
+        expiredLicense.setIsValid(true);
+        expiredLicense.setExpirationDate(today.minusDays(30)); // Expired 30 days ago
+        expiredLicense.setVersion(1);
+        expiredLicense.setHolder(holder);
+
+        // Valid license
+        License validLicense = new License();
+        validLicense.setId(2L);
+        validLicense.setDni("99999999");
+        validLicense.setIsValid(true);
+        validLicense.setExpirationDate(today.plusYears(3)); // Valid for 3 more years
+        validLicense.setVersion(1);
+        validLicense.setHolder(holder);
+
+        // Act & Assert for expired license
+        assertTrue(expiredLicense.isExpired(), "License should be expired");
+        assertFalse(expiredLicense.isCopy(), "Should not be a copy (version 1)");
+
+        // Act & Assert for valid license
+        assertFalse(validLicense.isExpired(), "License should not be expired");
+        assertFalse(validLicense.isCopy(), "Should not be a copy (version 1)");
+
+        // Test that we can identify the business logic correctly
+        boolean canCopyExpired = !expiredLicense.isExpired() && expiredLicense.getIsValid();
+        boolean canCopyValid = !validLicense.isExpired() && validLicense.getIsValid();
+
+        assertFalse(canCopyExpired, "Should not be able to copy expired license");
+        assertTrue(canCopyValid, "Should be able to copy valid, non-expired license");
+    }
 }

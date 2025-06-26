@@ -436,4 +436,103 @@ class AdministrativoControllerTest {
         verify(usuarioRepository).findByUsername("user"); // "user" es el username del mock user
         verify(licenseService).makeLicenseCopy(mockLicense, mockUser);
     }
+    
+    @Test
+    @WithMockUser(roles = "ADMINISTRATIVO")
+    void copiarLicencia_cuandoLicenciaEstaVencida_deberiaRedirigirConMensajeError() throws Exception {
+        // Arrange
+        License expiredLicense = new License();
+        expiredLicense.setId(1L);
+        expiredLicense.setDni("12345678");
+        expiredLicense.setIsValid(true);
+        expiredLicense.setExpirationDate(LocalDate.now().minusDays(1)); // Expired yesterday
+        
+        when(licenseService.getLicenseById(1L)).thenReturn(expiredLicense);
+
+        // Act & Assert
+        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                .andExpect(flash().attribute("error", "No se puede copiar una licencia vencida, se debe emitir una nueva"));
+
+        // Verify that only getLicenseById was called, no further processing
+        verify(licenseService).getLicenseById(1L);
+        verify(usuarioRepository, never()).findByUsername(any());
+        verify(licenseService, never()).makeLicenseCopy(any(), any());
+    }
+    
+    @Test
+    @WithMockUser(roles = "ADMINISTRATIVO")
+    void copiarLicencia_cuandoLicenciaEsInvalida_deberiaRedirigirConMensajeError() throws Exception {
+        // Arrange
+        License invalidLicense = new License();
+        invalidLicense.setId(1L);
+        invalidLicense.setDni("12345678");
+        invalidLicense.setIsValid(false); // Invalid license
+        invalidLicense.setExpirationDate(LocalDate.now().plusYears(2)); // Not expired
+        
+        when(licenseService.getLicenseById(1L)).thenReturn(invalidLicense);
+
+        // Act & Assert
+        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                .andExpect(flash().attribute("error", "No se puede copiar una licencia no válida."));
+
+        // Verify that only getLicenseById was called, no further processing
+        verify(licenseService).getLicenseById(1L);
+        verify(usuarioRepository, never()).findByUsername(any());
+        verify(licenseService, never()).makeLicenseCopy(any(), any());
+    }
+    
+    @Test
+    @WithMockUser(roles = "ADMINISTRATIVO")
+    void copiarLicencia_cuandoLicenciaEsVencidaEInvalida_deberiaRedirigirConMensajeDeVencida() throws Exception {
+        // Arrange - license that is both expired and invalid
+        License expiredAndInvalidLicense = new License();
+        expiredAndInvalidLicense.setId(1L);
+        expiredAndInvalidLicense.setDni("12345678");
+        expiredAndInvalidLicense.setIsValid(false); // Invalid
+        expiredAndInvalidLicense.setExpirationDate(LocalDate.now().minusDays(1)); // Expired
+        
+        when(licenseService.getLicenseById(1L)).thenReturn(expiredAndInvalidLicense);
+
+        // Act & Assert
+        // Should show expired message first (since expired check comes first in the code)
+        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                .andExpect(flash().attribute("error", "No se puede copiar una licencia vencida, se debe emitir una nueva"));
+
+        // Verify that only getLicenseById was called
+        verify(licenseService).getLicenseById(1L);
+        verify(usuarioRepository, never()).findByUsername(any());
+        verify(licenseService, never()).makeLicenseCopy(any(), any());
+    }
+    
+    @Test
+    @WithMockUser(roles = "ADMINISTRATIVO")
+    void copiarLicencia_cuandoLicenciaEsValidaYNoVencida_deberiaContinuarConProceso() throws Exception {
+        // Arrange
+        License validAndNotExpiredLicense = new License();
+        validAndNotExpiredLicense.setId(1L);
+        validAndNotExpiredLicense.setDni("12345678");
+        validAndNotExpiredLicense.setIsValid(true); // Valid
+        validAndNotExpiredLicense.setExpirationDate(LocalDate.now().plusYears(2)); // Not expired
+        
+        when(licenseService.getLicenseById(1L)).thenReturn(validAndNotExpiredLicense);
+        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+        doNothing().when(licenseService).makeLicenseCopy(validAndNotExpiredLicense, mockUser);
+
+        // Act & Assert
+        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                .andExpect(flash().attribute("success", "Licencia copiada exitosamente"));
+
+        // Verify that all methods were called (full process completed)
+        verify(licenseService).getLicenseById(1L);
+        verify(usuarioRepository).findByUsername("user");
+        verify(licenseService).makeLicenseCopy(validAndNotExpiredLicense, mockUser);
+    }
 }
