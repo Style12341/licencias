@@ -18,12 +18,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -46,7 +48,7 @@ public class AdministrativoController {
     private PdfGeneratorService pdfGeneratorService;
 
     private static final Logger logger = LoggerFactory.getLogger(AdministrativoController.class);
-    
+
     @Autowired
     private LicenseService licenseService;
 
@@ -65,17 +67,17 @@ public class AdministrativoController {
         model.addAttribute("title", "Emitir Licencia");
         return "administrativo/issueLicenseForm";
     }
-    
+
     @GetMapping("/licencias")
     public ResponseEntity<List<License>> getAllLicenses() {
         return ResponseEntity.ok(licenseService.getAllLicenses());
     }
-    
+
     @GetMapping("/licencias/{id}")
     public ResponseEntity<License> getLicenseById(@PathVariable Long id) {
         return ResponseEntity.ok(licenseService.getLicenseById(id));
     }
-    
+
     @PostMapping("/licencias")
     public String createLicense(@Valid @ModelAttribute License license, BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
@@ -84,19 +86,20 @@ public class AdministrativoController {
 
         LocalDate birthDate = license.getBirthDate();
         // Check if the birth date allows to issue a license today
-        if (!licenseService.isValidBirthDateWindow(birthDate)){
+        if (!licenseService.isValidBirthDateWindow(birthDate)) {
             model.addAttribute("invalidBirthDateWindow", true);
             return "administrativo/issueLicenseForm";
         }
 
         // Check if the holder is old enough to issue a license
-        if (!licenseService.isValidAge(license.getBirthDate(), license.getLicenseClasses())){
+        if (!licenseService.isValidAge(license.getBirthDate(), license.getLicenseClasses())) {
             model.addAttribute("invalidAge", true);
             return "administrativo/issueLicenseForm";
         }
 
         // Check if the holder can have a first time professional license
-        if (!licenseService.isValidFirstTimeForProfessionalLicense(license.getDni(), license.getBirthDate(), license.getLicenseClasses())) {
+        if (!licenseService.isValidFirstTimeForProfessionalLicense(license.getDni(), license.getBirthDate(),
+                license.getLicenseClasses())) {
             model.addAttribute("invalidFirstTimeForProfessionalLicense", true);
             return "administrativo/issueLicenseForm";
         }
@@ -110,28 +113,29 @@ public class AdministrativoController {
         User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
         license.setUser(user);
 
-        // Check if the holder exists, and assign it to the license. Do not use holder entity data to compute validations.
+        // Check if the holder exists, and assign it to the license. Do not use holder
+        // entity data to compute validations.
         Optional<Holder> holder = holderService.findById(license.getDni());
         if (holder.isEmpty()) {
             model.addAttribute("holderNotFound", true);
             return "administrativo/issueLicenseForm";
-        }else{
+        } else {
             license.setHolder(holder.get());
         }
 
         if (licenseService.isFirstLicense(license.getDni())) {
-            license.setObvservations("Principiante por primeros 6 meses. "+license.getObvservations());
+            license.setObvservations("Principiante por primeros 6 meses. " + license.getObvservations());
         }
 
         licenseService.createLicense(license);
         return "redirect:/administrativo/home"; // Redirect to the list page after successful creation
     }
-    
+
     @PutMapping("/licencias/{id}")
     public ResponseEntity<License> updateLicense(@PathVariable Long id, @RequestBody License license) {
         return ResponseEntity.ok(licenseService.updateLicense(license));
     }
-    
+
     @DeleteMapping("/licencias/{id}")
     public ResponseEntity<Void> deleteLicense(@PathVariable Long id) {
         licenseService.deleteLicense(id);
@@ -216,7 +220,8 @@ public class AdministrativoController {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
-            String filename = "licencia_" + licencia.getId() + "_" + licencia.getHolder().getLastName().replace(" ", "_") + ".pdf";
+            String filename = "licencia_" + licencia.getId() + "_"
+                    + licencia.getHolder().getLastName().replace(" ", "_") + ".pdf";
             headers.setContentDispositionFormData("attachment", filename);
             headers.setContentLength(pdfBytes.length);
 
@@ -242,9 +247,11 @@ public class AdministrativoController {
             logger.info("Método de pago {} asignado a la licencia ID {}", paymentMethod, id);
             return new ResponseEntity<>("Método de pago guardado exitosamente", HttpStatus.OK);
         } catch (RuntimeException e) {
-            logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id, e.getMessage());
+            logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id,
+                    e.getMessage());
             return new ResponseEntity<>("Error al guardar el método de pago", HttpStatus.INTERNAL_SERVER_ERROR);
-        }    }
+        }
+    }
 
     @Autowired
     private LicenseReportService licenseReportService;
@@ -255,7 +262,39 @@ public class AdministrativoController {
     }
 
     @PostMapping("/license-report-by-expiration")
-    public void generateReport(@RequestParam("startDate") LocalDate startDate, @RequestParam("endDate") LocalDate endDate, HttpServletResponse response) throws IOException {
+    public void generateReport(@RequestParam("startDate") LocalDate startDate,
+            @RequestParam("endDate") LocalDate endDate, HttpServletResponse response) throws IOException {
         licenseReportService.generateReport(startDate, endDate, response);
     }
+
+    @GetMapping("/licencias/{id}/copiar")
+    public String copiarLicencia(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails,
+            RedirectAttributes redirectAttributes) {
+        try {
+            License originalLicense = licenseService.getLicenseById(id);
+
+            if (originalLicense == null) {
+                redirectAttributes.addFlashAttribute("error", "Licencia no encontrada");
+                return "redirect:/administrativo/licencias/list";
+            }
+
+            License newLicense = new License();
+            newLicense.copyLicenseAttributes(originalLicense); // This now copies everything including holder
+            newLicense.setVersion(originalLicense.getVersion() + 1);
+
+            // Set the current user
+            User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
+            newLicense.setUser(user);
+
+            licenseService.createLicense(newLicense);
+            redirectAttributes.addFlashAttribute("success", "Licencia copiada exitosamente");
+            return "redirect:/administrativo/licencias/list";
+        } catch (Exception e) {
+            logger.error("Error al copiar la licencia: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Error inesperado al copiar la licencia");
+            return "redirect:/administrativo/licencias/list";
+        }
+
+    }
+
 }
