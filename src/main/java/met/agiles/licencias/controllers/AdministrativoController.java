@@ -278,6 +278,15 @@ public class AdministrativoController {
                 redirectAttributes.addFlashAttribute("error", "Licencia no encontrada");
                 return "redirect:/administrativo/licencias/list";
             }
+            if (originalLicense.isExpired()) {
+                redirectAttributes.addFlashAttribute("error",
+                        "No se puede copiar una licencia vencida, se debe emitir una nueva");
+                return "redirect:/administrativo/licencias/list";
+            }
+            if (!originalLicense.getIsValid()) {
+                redirectAttributes.addFlashAttribute("error", "No se puede copiar una licencia no válida.");
+                return "redirect:/administrativo/licencias/list";
+            }
             User user = usuarioRepository.findByUsername(userDetails.getUsername())
                     .orElseThrow(() -> new AuthenticationException("Administrativo no encontrado"));
             licenseService.makeLicenseCopy(originalLicense, user);
