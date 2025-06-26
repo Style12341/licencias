@@ -283,6 +283,10 @@ public class AdministrativoController {
             licenseService.makeLicenseCopy(originalLicense, user);
             redirectAttributes.addFlashAttribute("success", "Licencia copiada exitosamente");
             return "redirect:/administrativo/licencias/list";
+        } catch (AuthenticationException e) {
+            logger.error("Error de autenticación: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Administrativo no encontrado");
+            return "redirect:/administrativo/licencias/list";
         } catch (Exception e) {
             logger.error("Error al copiar la licencia: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("error", "Error inesperado al copiar la licencia");
