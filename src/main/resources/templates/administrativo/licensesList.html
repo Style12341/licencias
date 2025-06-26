@@ -16,10 +16,22 @@
         </div>
       </div>
     </nav>
-
     <!-- Contenido -->
     <div class="container mt-5">
       <h2 class="mb-4">Listado de Licencias</h2>
+
+      <!-- Mensajes de estado -->
+      <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
 
       <!-- Formulario de búsqueda -->
       <form class="row g-3 mb-4" method="get" th:action="@{/administrativo/licencias/list}">
@@ -57,6 +69,7 @@
               <th>Fecha Emisión</th>
               <th>Fecha Vencimiento</th>
               <th>Clase(s)</th>
+              <th>Version</th>
               <th>Valida</th>
               <th>Acciones</th>
             </tr>
@@ -70,10 +83,12 @@
               <td th:text="${#temporals.format(licencia.issuanceDate, 'dd/MM/yyyy')}">01/06/2025</td>
               <td th:text="${#temporals.format(licencia.expirationDate, 'dd/MM/yyyy')}" }>01/06/2029</td>
               <td th:text="${licencia.licenseClasses}">A, B</td>
+              <td th:text="${licencia.version}">1.0</td>
               <td>
                 <span th:if="${licencia.isValid}" class="badge bg-success">Válida</span>
                 <span th:if="${!licencia.isValid}" class="badge bg-danger">Inválida</span>
               </td>
+
               <td>
                 <a
                   th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}"
@@ -81,7 +96,7 @@
                   >Imprimir</a
                 >
                 <a
-                  th:href="${licencia.isValid} ? @{/administrativo/licencias/copia/{id}(id=${licencia.id})} : '#'"
+                  th:href="${licencia.isValid} ? @{/administrativo/licencias/{id}/copiar(id=${licencia.id})} : '#'"
                   th:class="${licencia.isValid} ? 'btn btn-sm btn-warning' : 'btn btn-sm btn-secondary disabled'"
                   th:title="${licencia.isValid} ? 'Emitir copia de la licencia' : 'No se puede copiar licencia inválida'"
                   th:onclick="${licencia.isValid} ? '' : 'return false;'"
