@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import met.agiles.licencias.enums.LicenseClass;
 
 @Entity
-@Table(name = "licenses", schema="public")
+@Table(name = "licenses", schema = "public")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,7 +31,8 @@ public class License {
 
     @ManyToOne
     @JoinColumn(name = "holder_id")
-    private Holder holder; // Refers to the license holder. Current data of the holder can be different than the data on the license.
+    private Holder holder; // Refers to the license holder. Current data of the holder can be different
+                           // than the data on the license.
 
     @JsonIgnore
     @OneToMany(mappedBy = "license", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -66,10 +67,7 @@ public class License {
     private LocalDate expirationDate;
 
     @ElementCollection
-    @CollectionTable(
-            name = "license_classes",
-            joinColumns = @JoinColumn(name = "license_id")
-    )
+    @CollectionTable(name = "license_classes", joinColumns = @JoinColumn(name = "license_id"))
     @Column(name = "license_class")
     @Enumerated(EnumType.STRING)
     private List<LicenseClass> licenseClasses;
@@ -89,11 +87,13 @@ public class License {
     private Boolean isDonor;
 
     public int getVigency() {
-        Period periodo = Period.between(issuanceDate,expirationDate);
+        Period periodo = Period.between(issuanceDate, expirationDate);
         return periodo.getYears();
-    }    @Column()
+    }
+
+    @Column()
     private double cost; // Total cost of the license, including administrative fees
-    
+
     public void copyLicenseAttributes(License license) {
         this.dni = license.getDni();
         this.cuit = license.getCuit();
@@ -105,13 +105,16 @@ public class License {
         this.issuanceDate = license.getIssuanceDate();
         this.expirationDate = license.getExpirationDate();
         // Create a new ArrayList to avoid shared collection references
-        this.licenseClasses = license.getLicenseClasses() != null ? 
-            new ArrayList<>(license.getLicenseClasses()) : null;
+        this.licenseClasses = license.getLicenseClasses() != null ? new ArrayList<>(license.getLicenseClasses()) : null;
         this.isValid = license.getIsValid();
         this.obvservations = license.getObvservations();
         this.isDonor = license.getIsDonor();
         this.version = license.getVersion();
         // Copy holder reference (same holder entity can be shared)
         this.holder = license.getHolder();
+    }
+
+    public boolean isCopy() {
+        return this.version > 1;
     }
 }

@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @Service
 public class LicenseService {
-
+    static final double LICENSE_COPY_COST = 50.0; // Cost for making a copy of a license
     @Autowired
     private LicenseRepository licenseRepository;
 
@@ -47,8 +47,9 @@ public class LicenseService {
 
     @Transactional
     public License createLicense(License license) {
-        this.calcularExpiracion(license);
-        this.calcularCostoTotal(license);
+        this.setExpiracionLicencia(license);
+        double cost = this.calcularCostoTotal(license);
+        license.setCost(cost);
         Holder holder = license.getHolder();
         this.invalidateActiveLicense(holder);
         return licenseRepository.save(license);
@@ -63,6 +64,9 @@ public class LicenseService {
     }
 
     public double calcularCostoTotal(License license) {
+        if (license.isCopy()) {
+            return LICENSE_COPY_COST; // If it's a copy, return the fixed cost
+        }
         double total = 0;
         for (LicenseClass clase : license.getLicenseClasses()) {
             LicensePricing licensePricing = licensePricingRepository.findByLicenseClassAndValidityYears(clase,
@@ -86,7 +90,7 @@ public class LicenseService {
         this.licenseRepository = licenseRepository;
     }
 
-    public void calcularExpiracion(License license) {
+    public void setExpiracionLicencia(License license) {
 
         LocalDate today = LocalDate.now();
         Holder holder = license.getHolder();
