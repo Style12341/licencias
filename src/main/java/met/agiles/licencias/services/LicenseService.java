@@ -1,7 +1,6 @@
 package met.agiles.licencias.services;
 
 import jakarta.transaction.Transactional;
-import met.agiles.licencias.controllers.AdministrativoController;
 import met.agiles.licencias.enums.LicenseClass;
 import met.agiles.licencias.enums.PaymentMethod;
 import met.agiles.licencias.persistance.models.*;
@@ -9,8 +8,6 @@ import met.agiles.licencias.persistance.repository.LicensePricingRepository;
 import met.agiles.licencias.persistance.repository.LicenseRepository;
 import met.agiles.licencias.persistance.repository.PaymentReceiptRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
