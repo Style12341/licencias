@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import javax.security.sasl.AuthenticationException;
+
 import com.lowagie.text.DocumentException;
 import met.agiles.licencias.enums.PaymentMethod;
 import met.agiles.licencias.services.PdfGeneratorService;
@@ -272,21 +274,13 @@ public class AdministrativoController {
             RedirectAttributes redirectAttributes) {
         try {
             License originalLicense = licenseService.getLicenseById(id);
-
             if (originalLicense == null) {
                 redirectAttributes.addFlashAttribute("error", "Licencia no encontrada");
                 return "redirect:/administrativo/licencias/list";
             }
-
-            License newLicense = new License();
-            newLicense.copyLicenseAttributes(originalLicense); // This now copies everything including holder
-            newLicense.setVersion(originalLicense.getVersion() + 1);
-
-            // Set the current user
-            User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
-            newLicense.setUser(user);
-
-            licenseService.createLicense(newLicense);
+            User user = usuarioRepository.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new AuthenticationException("Administrativo no encontrado"));
+            licenseService.makeLicenseCopy(originalLicense, user);
             redirectAttributes.addFlashAttribute("success", "Licencia copiada exitosamente");
             return "redirect:/administrativo/licencias/list";
         } catch (Exception e) {
