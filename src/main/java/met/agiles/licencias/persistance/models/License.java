@@ -114,6 +114,10 @@ public class License {
         this.holder = license.getHolder();
     }
 
+    public boolean isExpired() {
+        return LocalDate.now().isAfter(this.expirationDate);
+    }
+
     public boolean isCopy() {
         return this.version > 1;
     }
