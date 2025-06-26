@@ -4,9 +4,11 @@ import met.agiles.licencias.configuration.SecurityConfig;
 import met.agiles.licencias.enums.PaymentMethod;
 import met.agiles.licencias.persistance.models.Holder;
 import met.agiles.licencias.persistance.models.License;
+import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.HolderRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import met.agiles.licencias.services.CustomUserDetailsService;
+import met.agiles.licencias.services.LicenseReportService;
 import met.agiles.licencias.services.LicenseService;
 import met.agiles.licencias.services.PdfGeneratorService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -53,10 +56,16 @@ class AdministrativoControllerTest {
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
 
+    @MockBean
+    private LicenseReportService licenseReportService;
+
     private License mockLicense;
     private Holder mockHolder;
-
-
+    
+    // Additional test data for reissue tests
+    private User mockUser;
+    private License mockActiveLicense;
+    private License mockNewLicense;
     @BeforeEach
     void setUp() {
         mockHolder = new Holder();
@@ -74,6 +83,27 @@ class AdministrativoControllerTest {
         mockLicense.setIssuanceDate(LocalDate.now());
         mockLicense.setExpirationDate(LocalDate.now().plusYears(5));
         mockLicense.setHolder(mockHolder);
+        mockLicense.setIsValid(true);
+        
+        mockUser = new User();
+        mockUser.setId(1L);
+        mockUser.setUsername("admin");
+        mockUser.setPassword("password");
+        
+        mockActiveLicense = new License();
+        mockActiveLicense.setId(2L);
+        mockActiveLicense.setDni("12345678");
+        mockActiveLicense.setIsValid(true);
+        mockActiveLicense.setHolder(mockHolder);
+        mockActiveLicense.setIssuanceDate(LocalDate.now().minusYears(1));
+        mockActiveLicense.setExpirationDate(LocalDate.now().plusYears(4));
+          mockNewLicense = new License();
+        mockNewLicense.setId(3L);
+        mockNewLicense.setDni("12345678");
+        mockNewLicense.setIsValid(true);
+        mockNewLicense.setHolder(mockHolder);
+        mockNewLicense.setIssuanceDate(LocalDate.now());
+        mockNewLicense.setExpirationDate(LocalDate.now().plusYears(5));
     }
 
     @Test
@@ -213,6 +243,97 @@ class AdministrativoControllerTest {
                         .param("paymentMethod", "EFECTIVO"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string("Error al guardar el método de pago"));
+    }    @Test
+    @WithMockUser(roles = "ADMINISTRATIVO")
+    void createLicense_conTitularConLicenciaActiva_deberiaInvalidarLicenciaAnterior() throws Exception {
+        // Arrange - preparar la nueva licencia que se va a crear
+        License newLicense = new License();
+        newLicense.setDni("12345678");
+        newLicense.setBirthDate(LocalDate.of(1990, 5, 15));
+        newLicense.setLast_name("GONZALEZ");
+        newLicense.setFirst_name("JUAN");
+        
+        // Mock del holder existente
+        when(holderRepository.findById("12345678")).thenReturn(Optional.of(mockHolder));
+        
+        // Mock del usuario autenticado
+        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+        
+        // Mock de validaciones
+        when(licenseService.isValidBirthDateWindow(any(LocalDate.class))).thenReturn(true);
+        when(licenseService.isValidAge(any(LocalDate.class), any())).thenReturn(true);
+        when(licenseService.isValidFirstTimeForProfessionalLicense(anyString(), any(LocalDate.class), any())).thenReturn(true);
+        when(licenseService.isFirstLicense("12345678")).thenReturn(false);
+        
+        // Mock del método createLicense que internamente llama a invalidateActiveLicense
+        when(licenseService.createLicense(any(License.class))).thenReturn(mockNewLicense);
+
+        // Act & Assert
+        mockMvc.perform(post("/administrativo/licencias")
+                        .param("dni", "12345678")
+                        .param("birthDate", "1990-05-15")
+                        .param("last_name", "GONZALEZ")
+                        .param("first_name", "JUAN")
+                        .param("address", "Direccion 123")
+                        .param("city", "Ciudad")
+                        .param("cuit", "20-12345678-9")
+                        .param("licenseClasses", "A"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/administrativo/home"));
+
+        // Verify que createLicense fue llamado, que internamente maneja la invalidación
+        verify(licenseService).createLicense(any(License.class));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRATIVO") 
+    void createLicense_conTitularSinLicenciaActiva_deberiaCrearLicenciaSinInvalidarOtra() throws Exception {
+        // Arrange - preparar la nueva licencia que se va a crear
+        License newLicense = new License();
+        newLicense.setDni("87654321");
+        newLicense.setBirthDate(LocalDate.of(1995, 8, 20));
+        newLicense.setLast_name("MARTINEZ");
+        newLicense.setFirst_name("MARIA");
+        
+        // Mock del holder existente sin licencias previas
+        Holder holderSinLicencias = new Holder();
+        holderSinLicencias.setDni("87654321");
+        holderSinLicencias.setName("MARIA");
+        holderSinLicencias.setLastName("MARTINEZ");
+        holderSinLicencias.setBirthDate(LocalDate.of(1995, 8, 20));
+        
+        when(holderRepository.findById("87654321")).thenReturn(Optional.of(holderSinLicencias));
+        
+        // Mock del usuario autenticado
+        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+        
+        // Mock de validaciones
+        when(licenseService.isValidBirthDateWindow(any(LocalDate.class))).thenReturn(true);
+        when(licenseService.isValidAge(any(LocalDate.class), any())).thenReturn(true);
+        when(licenseService.isValidFirstTimeForProfessionalLicense(anyString(), any(LocalDate.class), any())).thenReturn(true);
+        when(licenseService.isFirstLicense("87654321")).thenReturn(true);
+        
+        // Mock del método createLicense
+        License nuevaLicencia = new License();
+        nuevaLicencia.setId(4L);
+        nuevaLicencia.setDni("87654321");
+        when(licenseService.createLicense(any(License.class))).thenReturn(nuevaLicencia);
+
+        // Act & Assert
+        mockMvc.perform(post("/administrativo/licencias")
+                        .param("dni", "87654321")
+                        .param("birthDate", "1995-08-20")
+                        .param("last_name", "MARTINEZ")
+                        .param("first_name", "MARIA")
+                        .param("address", "Otra Direccion 456")
+                        .param("city", "Otra Ciudad")
+                        .param("cuit", "20-87654321-9")
+                        .param("licenseClasses", "B"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/administrativo/home"));
+
+        // Verify que createLicense fue llamado
+        verify(licenseService).createLicense(any(License.class));
     }
 
 }

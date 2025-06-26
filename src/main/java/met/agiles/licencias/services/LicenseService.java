@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class LicenseService {
@@ -43,10 +44,13 @@ public class LicenseService {
     public License getLicenseById(Long id) {
         return licenseRepository.findById(id).orElse(null);
     }
-    
+
+    @Transactional
     public License createLicense(License license) {
         this.calcularExpiracion(license);
         this.calcularCostoTotal(license);
+        Holder holder = license.getHolder();
+        this.invalidateActiveLicense(holder);
         return licenseRepository.save(license);
     }
     
@@ -167,12 +171,27 @@ public class LicenseService {
                 })
                 .toList();
     }
-
+    
+    @Transactional
+    public void invalidateActiveLicense(Holder holder) {
+        String dni = holder.getDni();
+        Optional<License> activeLicenseOpt = this.getActiveLicenseByHolderDni(dni);
+        if (activeLicenseOpt.isPresent()) {
+            //Log that the active license is being invalidated
+            Logger logger = LoggerFactory.getLogger(AdministrativoController.class);
+            logger.info("Invalidating active license for holder with DNI: " + dni);
+            License activeLicense = activeLicenseOpt.get();
+            activeLicense.setIsValid(false); // Invalidate the active license
+            licenseRepository.save(activeLicense); // Save the changes
+        }
+    }
     public boolean isFirstLicense(String dni) {
         List<License> licenses = licenseRepository.findByDni(dni);
         return licenses.isEmpty();
     }
-
+    public Optional<License> getActiveLicenseByHolderDni(String dni) {
+        return licenseRepository.findByDniAndExpirationDateGreaterThanEqualAndIsValidTrue(dni, LocalDate.now());
+    }
     @Transactional // Asegura que ambas operaciones (guardar recibo y actualizar licencia) sean atómicas
     public License assignPaymentToLicense(Long licenseId, PaymentMethod paymentMethod) {
         License license = licenseRepository.findById(licenseId)

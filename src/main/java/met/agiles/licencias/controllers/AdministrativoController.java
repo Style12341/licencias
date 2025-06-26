@@ -244,8 +244,7 @@ public class AdministrativoController {
         } catch (RuntimeException e) {
             logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id, e.getMessage());
             return new ResponseEntity<>("Error al guardar el método de pago", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+        }    }
 
     @Autowired
     private LicenseReportService licenseReportService;

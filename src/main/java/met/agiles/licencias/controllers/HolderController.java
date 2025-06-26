@@ -1,26 +1,34 @@
 package met.agiles.licencias.controllers;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import met.agiles.licencias.dto.HolderRequestDto;
 import met.agiles.licencias.enums.LicenseClass;
+import met.agiles.licencias.persistance.models.Holder;
+import met.agiles.licencias.persistance.repository.HolderRepository;
 import met.agiles.licencias.services.HolderService;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Controller
 public class HolderController {
 
     private final HolderService holderService;
+    private final HolderRepository holderRepository;
 
-    public HolderController(HolderService holderService) {
+    public HolderController(HolderService holderService, HolderRepository holderRepository) {
         this.holderService = holderService;
+        this.holderRepository = holderRepository;
     }
 
     @GetMapping("/administrativo/titulares/nuevo")
@@ -49,6 +57,29 @@ public class HolderController {
             model.addAttribute("error", e.getMessage());
             model.addAttribute("title", "Alta de Titular");
             return "administrativo/titulares/nuevo";
+        }
+    }
+
+    @GetMapping("/api/holder/{dni}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getHolderByDni(@PathVariable String dni) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            Optional<Holder> holder = holderRepository.findById(dni);
+            if (holder.isPresent()) {
+                response.put("success", true);
+                response.put("data", holder.get());
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("success", false);
+                response.put("error", "Titular no existente");
+                return ResponseEntity.ok(response);
+            }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", "Error interno del servidor");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
