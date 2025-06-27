@@ -43,15 +43,16 @@ public class DataSeederService implements CommandLineRunner {
     }
 
     private void seedAdministrator() {
-        // Check if administrator already exists
         if (!usuarioRepository.existsByUsername("admin")) {
             User admin = new User();
             admin.setUsername("admin");
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setRole(Role.ADMINISTRADOR);
-            
+            admin.setFirstName("Admin");
+            admin.setLastName("User");
+
             usuarioRepository.save(admin);
-            
+
             System.out.println("✅ Administrator user created successfully:");
             System.out.println("   Username: admin");
             System.out.println("   Password: admin123");
@@ -62,7 +63,6 @@ public class DataSeederService implements CommandLineRunner {
     }
 
     private void seedAdministrativo() {
-        // Check if administrativo already exists
         if (!usuarioRepository.existsByUsername("administrativo")) {
             User administrativo = new User();
             administrativo.setUsername("administrativo");
@@ -70,9 +70,11 @@ public class DataSeederService implements CommandLineRunner {
             administrativo.setRole(Role.ADMINISTRATIVO);
             administrativo.setProvincia("Buenos Aires");
             administrativo.setCiudad("La Plata");
-            
+            administrativo.setFirstName("Administrativo");
+            administrativo.setLastName("User");
+
             usuarioRepository.save(administrativo);
-            
+
             System.out.println("✅ Administrativo user created successfully:");
             System.out.println("   Username: administrativo");
             System.out.println("   Password: admin123");

@@ -83,8 +83,7 @@ public class License {
     private Boolean isDonor;
 
     public int getVigency() {
-        Period periodo = Period.between(issuanceDate, expirationDate);
-        return periodo.getYears();
+        return expirationDate.getYear() - issuanceDate.getYear();
     }
 
     @Column()
