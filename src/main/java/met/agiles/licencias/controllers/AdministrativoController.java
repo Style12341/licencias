@@ -9,6 +9,8 @@ import java.util.Optional;
 
 import com.lowagie.text.DocumentException;
 import met.agiles.licencias.enums.PaymentMethod;
+import met.agiles.licencias.persistance.models.PaymentReceipt;
+import met.agiles.licencias.persistance.repository.PaymentReceiptRepository;
 import met.agiles.licencias.services.PdfGeneratorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +54,9 @@ public class AdministrativoController {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private PaymentReceiptRepository paymentReceiptRepository;
 
     @GetMapping("/home")
     public String administrativoHome(Model model) {
@@ -203,6 +208,49 @@ public class AdministrativoController {
         }
     }
 
+    @GetMapping("/licencias/{id}/comprobante")
+    public String showLicenseReceipt(@PathVariable Long id, Model model) {
+        try {
+            License licencia = licenseService.getLicenseById(id);
+            if (licencia == null) {
+                return "redirect:/administrativo/licencias/comprobante-error?error=licensenotfound";
+            }
+            PaymentReceipt paymentReceipt = paymentReceiptRepository.findByLicenseId(id);
+            if (paymentReceipt == null) {
+                return "redirect:/administrativo/licencias/comprobante-error?error=notprinted";
+            }
+
+            model.addAttribute("paymentReceipt", paymentReceipt);
+            model.addAttribute("title", "Comprobante de Licencia - " + licencia.getHolder().getLastName());
+
+            System.out.println("Comprobante de pago: " + paymentReceipt);
+
+            return "administrativo/licenseReceipt";
+        } catch (RuntimeException e) {
+            return "redirect:/administrativo/licenseReceipt?error=internal_error";
+        }
+    }
+
+    @GetMapping("/licencias/comprobante-error")
+    public String showLicenseReceiptError(@RequestParam(name = "error") String errorType, Model model) {
+        switch (errorType) {
+            case "licensenotfound":
+                model.addAttribute("errorMessage", "Error: La licencia solicitada no fue encontrada. Por favor, intente con otro ID.");
+                break;
+            case "notprinted":
+                model.addAttribute("errorMessage", "Error: La licencia no ha sido impresa aún. No tiene asociado un comprobante de pago.");
+                break;
+            case "internal_error":
+                model.addAttribute("errorMessage", "Ha ocurrido un error interno al procesar el comprobante.");
+                break;
+            default:
+                model.addAttribute("errorMessage", "Ha ocurrido un error inesperado.");
+                break;
+        }
+        model.addAttribute("title", "Error al Cargar Comprobante");
+        return "administrativo/licenseReceipt";
+    }
+
     @GetMapping("/licencias/generar-pdf/{id}")
     public ResponseEntity<byte[]> generarLicenciaPdf(@PathVariable Long id) {
         try {
@@ -233,6 +281,42 @@ public class AdministrativoController {
         }
     }
 
+    @GetMapping("/licencias/comprobante-pdf/{licenseId}")
+    public ResponseEntity<byte[]> generateReceiptPdf(@PathVariable Long licenseId) {
+        try {
+            // Buscar el PaymentReceipt por el ID de la licencia
+            // Ajusta este código según tu implementación de repositorio
+            PaymentReceipt paymentReceipt = paymentReceiptRepository.findByLicenseId(licenseId);
+
+            if (paymentReceipt == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            System.out.println("Comprobante de pago encontrado: \n" +
+                    "ID: " + paymentReceipt.getId() +
+                    "\nLicencia DNI: " + paymentReceipt.getLicense().getDni() +
+                    "\nNombre: " + paymentReceipt.getLicense().getFirst_name() + " " + paymentReceipt.getLicense().getLast_name() +
+                    "\nMétodo de pago: " + paymentReceipt.getPaymentMethod() +
+                    "\nFecha de pago: " + paymentReceipt.getPaymentDate() +
+                    "\nAdministrativo: " + paymentReceipt.getAdministrativo().getUsername());
+
+            // Generar el PDF
+            byte[] pdfBytes = pdfGeneratorService.generateReceiptPdf(paymentReceipt);
+
+            // Configurar headers para la respuesta
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("inline", "comprobante_" + paymentReceipt.getId() + ".pdf");
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error generando PDF del comprobante para licencia ID: " + licenseId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @PostMapping("/licencias/guardar-metodo-pago/{id}")
     public ResponseEntity<String> savePaymentMethod(
             @PathVariable("id") Long id,
@@ -243,7 +327,7 @@ public class AdministrativoController {
             return new ResponseEntity<>("Método de pago guardado exitosamente", HttpStatus.OK);
         } catch (RuntimeException e) {
             logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id, e.getMessage());
-            return new ResponseEntity<>("Error al guardar el método de pago", HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }    }
 
     @Autowired

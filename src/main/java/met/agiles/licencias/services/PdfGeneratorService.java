@@ -12,9 +12,11 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.Chunk;
 import java.awt.Color;
 import com.lowagie.text.pdf.PdfWriter;
+import met.agiles.licencias.persistance.models.PaymentReceipt;
 import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
@@ -25,6 +27,221 @@ import met.agiles.licencias.enums.LicenseClass;
 public class PdfGeneratorService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DecimalFormat MONEY_FORMAT = new DecimalFormat("$#,##0.00");
+
+    public byte[] generateReceiptPdf(PaymentReceipt paymentReceipt) throws IOException, DocumentException {
+        // Tamaño de ticket - más alto que ancho para formato vertical
+        // 210mm x 297mm (A4) pero ajustado para ticket: 150mm x 200mm
+        Rectangle pageSize = new Rectangle(260f, 330f); // 150mm x 200mm en puntos
+        Document document = new Document(pageSize, 0, 0, 0, 0);
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        PdfWriter.getInstance(document, os);
+
+        document.open();
+
+        try {
+            // ==========================================================
+            // COLORES Y FUENTES
+            // ==========================================================
+            Color borderColor = new Color(108, 117, 125); // #6c757d
+            Color labelColor = new Color(73, 80, 87); // #495057
+            Color footerTextColor = new Color(108, 117, 125); // #6c757d
+
+            Font fontTitle = new Font(Font.COURIER, 14, Font.BOLD, Color.BLACK);
+            Font fontSubtitle = new Font(Font.COURIER, 10, Font.NORMAL, Color.BLACK);
+            Font fontLabel = new Font(Font.COURIER, 9, Font.BOLD, labelColor);
+            Font fontValue = new Font(Font.COURIER, 9, Font.NORMAL, Color.BLACK);
+            Font fontTotal = new Font(Font.COURIER, 12, Font.BOLD, Color.BLACK);
+            Font fontFooter = new Font(Font.COURIER, 8, Font.NORMAL, footerTextColor);
+
+            // ==========================================================
+            // ESTRUCTURA PRINCIPAL DEL COMPROBANTE
+            // ==========================================================
+
+            // Tabla principal con borde punteado
+            PdfPTable mainTable = new PdfPTable(1);
+            mainTable.setWidthPercentage(100);
+
+            PdfPCell mainCell = new PdfPCell();
+            mainCell.setBorder(Rectangle.NO_BORDER);
+            // Simular borde punteado con múltiples líneas finas
+            mainCell.setPadding(15f);
+
+            // Contenido interno
+            PdfPTable contentTable = new PdfPTable(1);
+            contentTable.setWidthPercentage(100);
+
+            // ==========================================================
+            // ENCABEZADO
+            // ==========================================================
+            addReceiptHeader(contentTable, paymentReceipt, fontTitle, fontSubtitle, borderColor);
+
+            // ==========================================================
+            // CUERPO - DATOS DEL COMPROBANTE
+            // ==========================================================
+            addReceiptBody(contentTable, paymentReceipt, fontLabel, fontValue, fontTotal);
+
+            // ==========================================================
+            // PIE DE PÁGINA
+            // ==========================================================
+            addReceiptFooter(contentTable, fontFooter, borderColor);
+
+            mainCell.addElement(contentTable);
+            mainTable.addCell(mainCell);
+            document.add(mainTable);
+
+        } finally {
+            document.close();
+        }
+
+        return os.toByteArray();
+    }
+
+    // ==========================================================
+    // MÉTODOS HELPER
+    // ==========================================================
+
+    private void addReceiptHeader(PdfPTable table, PaymentReceipt receipt,
+                                  Font titleFont, Font subtitleFont, Color borderColor) {
+
+        // Título principal
+        PdfPCell titleCell = new PdfPCell(new Phrase("COMPROBANTE DE PAGO", titleFont));
+        titleCell.setBorder(Rectangle.NO_BORDER);
+        titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        titleCell.setPaddingBottom(5f);
+        table.addCell(titleCell);
+
+        // ID Transacción
+        PdfPCell idCell = new PdfPCell(new Phrase("ID de Transacción: " + receipt.getId(), subtitleFont));
+        idCell.setBorder(Rectangle.NO_BORDER);
+        idCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        idCell.setPaddingBottom(10f);
+        table.addCell(idCell);
+
+        // Línea separadora
+        PdfPCell separatorCell = new PdfPCell();
+        separatorCell.setBorder(Rectangle.BOTTOM);
+        separatorCell.setBorderColor(borderColor);
+        separatorCell.setBorderWidth(1f);
+        separatorCell.setFixedHeight(10f);
+        table.addCell(separatorCell);
+
+        // Espacio
+        addSpacerCell(table, 10f);
+    }
+
+    private void addReceiptBody(PdfPTable table, PaymentReceipt receipt,
+                                Font labelFont, Font valueFont, Font totalFont) {
+
+        // Fecha de Pago
+        addReceiptItem(table, "Fecha de Pago:",
+                receipt.getPaymentDate().format(DATE_FORMATTER),
+                labelFont, valueFont);
+
+        // Titular Licencia
+        addReceiptItem(table, "Titular Licencia:",
+                receipt.getLicense().getLast_name() + ", " + receipt.getLicense().getFirst_name(),
+                labelFont, valueFont);
+
+        // N° Licencia
+        addReceiptItem(table, "N° Licencia:",
+                String.valueOf(receipt.getLicense().getDni()),
+                labelFont, valueFont);
+
+        // Línea separadora
+        addSeparatorLine(table);
+
+        // Concepto
+        addReceiptItem(table, "Concepto:",
+                "Emisión de Licencia de Conducir",
+                labelFont, valueFont);
+
+        // Método de Pago
+        String paymentMethod = receipt.getPaymentMethod().name().replace("_", " ");
+        addReceiptItem(table, "Método de Pago:",
+                paymentMethod,
+                labelFont, valueFont);
+
+        // Importe Total (destacado)
+        addReceiptItem(table, "IMPORTE TOTAL:",
+                MONEY_FORMAT.format(receipt.getLicense().getCost()),
+                totalFont, totalFont);
+
+        // Línea separadora
+        addSeparatorLine(table);
+
+        // Atendido por
+        addReceiptItem(table, "Atendido por:",
+                receipt.getAdministrativo().getUsername(),
+                labelFont, valueFont);
+    }
+
+    private void addReceiptFooter(PdfPTable table, Font footerFont, Color borderColor) {
+        // Espacio antes del footer
+        addSpacerCell(table, 15f);
+
+        // Línea separadora superior
+        PdfPCell separatorCell = new PdfPCell();
+        separatorCell.setBorder(Rectangle.TOP);
+        separatorCell.setBorderColor(borderColor);
+        separatorCell.setBorderWidth(1f);
+        separatorCell.setFixedHeight(10f);
+        table.addCell(separatorCell);
+
+        // Mensaje del footer
+        PdfPCell footerCell = new PdfPCell(new Phrase("Gracias por su pago. Conserve este comprobante.", footerFont));
+        footerCell.setBorder(Rectangle.NO_BORDER);
+        footerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        footerCell.setPaddingTop(10f);
+        table.addCell(footerCell);
+    }
+
+    private void addReceiptItem(PdfPTable table, String label, String value,
+                                Font labelFont, Font valueFont) {
+
+        // Crear tabla de 2 columnas para cada item
+        PdfPTable itemTable = new PdfPTable(new float[]{0.4f, 0.6f});
+        itemTable.setWidthPercentage(100);
+
+        // Celda del label (izquierda)
+        PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
+        labelCell.setBorder(Rectangle.NO_BORDER);
+        labelCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+        labelCell.setPaddingBottom(8f);
+        itemTable.addCell(labelCell);
+
+        // Celda del valor (derecha)
+        PdfPCell valueCell = new PdfPCell(new Phrase(value.toUpperCase(), valueFont));
+        valueCell.setBorder(Rectangle.NO_BORDER);
+        valueCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        valueCell.setPaddingBottom(8f);
+        itemTable.addCell(valueCell);
+
+        // Agregar la tabla item a la tabla principal
+        PdfPCell itemWrapperCell = new PdfPCell(itemTable);
+        itemWrapperCell.setBorder(Rectangle.NO_BORDER);
+        itemWrapperCell.setPadding(0);
+        table.addCell(itemWrapperCell);
+    }
+
+    private void addSeparatorLine(PdfPTable table) {
+        PdfPCell hrCell = new PdfPCell();
+        hrCell.setBorder(Rectangle.BOTTOM);
+        hrCell.setBorderColor(Color.LIGHT_GRAY);
+        hrCell.setBorderWidth(0.5f);
+        hrCell.setFixedHeight(5f);
+        hrCell.setPaddingTop(5f);
+        hrCell.setPaddingBottom(5f);
+        table.addCell(hrCell);
+    }
+
+    private void addSpacerCell(PdfPTable table, float height) {
+        PdfPCell spacerCell = new PdfPCell();
+        spacerCell.setBorder(Rectangle.NO_BORDER);
+        spacerCell.setFixedHeight(height);
+        table.addCell(spacerCell);
+    }
 
     public byte[] generateLicensePdf(License licencia) throws IOException, DocumentException {
         // Dimensiones estándar de tarjeta de crédito/ID (ID-1) en puntos (1 pulgada = 72 puntos)

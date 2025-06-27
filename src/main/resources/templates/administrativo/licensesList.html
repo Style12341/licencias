@@ -66,6 +66,7 @@
                 <td th:text="${licencia.licenseClasses}">A, B</td>
                 <td>
                     <a th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}" class="btn btn-sm btn-outline-primary">Imprimir</a>
+                    <a th:href="@{/administrativo/licencias/{id}/comprobante(id=${licencia.id})}" class="btn btn-sm btn-outline-secondary">Ver comprobante</a>
                 </td>
             </tr>
             <tr th:if="${#lists.isEmpty(licencias)}">

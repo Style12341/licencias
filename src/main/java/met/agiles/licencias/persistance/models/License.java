@@ -35,10 +35,6 @@ public class License {
     @JoinColumn(name = "holder_id")
     private Holder holder; // Refers to the license holder. Current data of the holder can be different than the data on the license.
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "license", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PaymentReceipt> paymentReceipts;
-
     // Printed license data
     @Column(nullable = false)
     private String dni;
