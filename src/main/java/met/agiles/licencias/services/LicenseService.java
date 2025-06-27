@@ -1,6 +1,7 @@
 package met.agiles.licencias.services;
 
 import jakarta.transaction.Transactional;
+import met.agiles.licencias.controllers.AdministrativoController;
 import met.agiles.licencias.enums.LicenseClass;
 import met.agiles.licencias.enums.PaymentMethod;
 import met.agiles.licencias.persistance.models.*;
@@ -8,12 +9,14 @@ import met.agiles.licencias.persistance.repository.LicensePricingRepository;
 import met.agiles.licencias.persistance.repository.LicenseRepository;
 import met.agiles.licencias.persistance.repository.PaymentReceiptRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
@@ -61,13 +64,12 @@ public class LicenseService {
     }
 
     public double calcularCostoTotal(License license) {
+        double total = 0;
         if (license.isCopy()) {
             return LICENSE_COPY_COST; // If it's a copy, return the fixed cost
         }
-        double total = 0;
         for (LicenseClass clase : license.getLicenseClasses()) {
-            LicensePricing licensePricing = licensePricingRepository.findByLicenseClassAndValidityYears(clase,
-                    license.getVigency());
+            LicensePricing licensePricing = licensePricingRepository.findByLicenseClassAndValidityYears(clase, license.getVigency());
             total += licensePricing.getPrice();
         }
         return total + LicensePricing.getBasePrice(); // + gastos administrativos
@@ -88,26 +90,33 @@ public class LicenseService {
     }
 
     public void setExpiracionLicencia(License license) {
-
         LocalDate today = LocalDate.now();
-        Holder holder = license.getHolder();
+        license.setIssuanceDate(today);
 
-        if (licenseRepository.findByDni(holder.getDni()).isEmpty() && holder.getEdad() < 21) {
-            license.setExpirationDate(today.plusYears(1));
-            license.setObvservations((license.getObvservations() != null ? license.getObvservations() + "\n" : "")
-                    + "Principiante por primeros 6 meses.");
-        } else if (holder.getEdad() < 21) {
-            license.setExpirationDate(today.plusYears(3));
-        } else if (holder.getEdad() >= 21 && holder.getEdad() < 46) {
-            license.setExpirationDate(today.plusYears(5));
-        } else if (holder.getEdad() >= 46 && holder.getEdad() < 60) {
-            license.setExpirationDate(today.plusYears(4));
-        } else if (holder.getEdad() >= 60 && holder.getEdad() < 70) {
-            license.setExpirationDate(today.plusYears(3));
+        Holder holder = license.getHolder();
+        LocalDate birthDate = holder.getBirthDate();
+        int edad = holder.getEdad();
+
+        int añosVigencia;
+
+        if (licenseRepository.findByDni(holder.getDni()).isEmpty() && edad < 21) {
+            añosVigencia = 1;
+        } else if (edad < 21) {
+            añosVigencia = 3;
+        } else if (edad < 46) {
+            añosVigencia = 5;
+        } else if (edad < 60) {
+            añosVigencia = 4;
+        } else if (edad < 70) {
+            añosVigencia = 3;
         } else {
-            license.setExpirationDate(today.plusYears(1));
+            añosVigencia = 1;
         }
+
+        LocalDate expirationDate = birthDate.withYear(today.getYear() + añosVigencia);
+        license.setExpirationDate(expirationDate);
     }
+
 
     public boolean isValidBirthDateWindow(LocalDate birthDate) {
         LocalDate today = LocalDate.now();
@@ -123,8 +132,6 @@ public class LicenseService {
         System.out.println("Age: " + age);
 
         for (LicenseClass licenseClass : licenseClasses) {
-            // If licenseClass if C, D or E, then the holder must be at least 21 years old.
-            // Else he must be at least 17.
             if (licenseClass == LicenseClass.C || licenseClass == LicenseClass.D || licenseClass == LicenseClass.E) {
                 if (age < 21) {
                     return false;
