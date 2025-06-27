@@ -88,21 +88,17 @@
                 <span th:if="${licencia.isValid}" class="badge bg-success">Válida</span>
                 <span th:if="${!licencia.isValid}" class="badge bg-danger">Inválida</span>
               </td>
-
               <td>
-                <a
-                  th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}"
-                  class="btn btn-sm btn-primary"
-                  >Imprimir</a
-                >
+                <a th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}" class="btn btn-sm btn-primary">Imprimir</a>
+                  <a th:href="@{/administrativo/licencias/{id}/comprobante(id=${licencia.id})}" class="btn btn-sm btn-outline-secondary">Ver comprobante</a>
                 <a
                   th:href="${licencia.isValid} ? @{/administrativo/licencias/{id}/copiar(id=${licencia.id})} : '#'"
                   th:class="${licencia.isValid} ? 'btn btn-sm btn-warning' : 'btn btn-sm btn-secondary disabled'"
                   th:title="${licencia.isValid} ? 'Emitir copia de la licencia' : 'No se puede copiar licencia inválida'"
                   th:onclick="${licencia.isValid} ? '' : 'return false;'"
                   th:style="${licencia.isValid} ? '' : 'pointer-events: none; opacity: 0.6;'"
-                  >Emitir Copia</a
-                >
+                  >Emitir Copia
+                </a>
               </td>
             </tr>
             <tr th:if="${#lists.isEmpty(licencias)}">
