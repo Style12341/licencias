@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${title ?: 'Comprobante de Licencia'}"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background-color: #f0f2f5;
+        }
+        /* Estilo para el comprobante tipo ticket */
+        .receipt-ticket {
+            border: 2px dashed #6c757d;
+            background-color: #fff;
+            max-width: 600px;
+            margin: auto;
+            padding: 2rem;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #6c757d;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+        }
+        .receipt-header h3 {
+            font-weight: bold;
+            color: #343a40;
+            text-transform: uppercase;
+        }
+        .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+        .receipt-item .label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .receipt-item .value {
+            text-align: right;
+        }
+        .receipt-footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 2px dashed #6c757d;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        /* Contenedor del botón de impresión flotante */
+        .print-button-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        /* Ocultar elementos que no se imprimen */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .printable-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-success no-print">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/administrativo/home">Sistema de Licencias</a>
+        <div class="navbar-nav ms-auto">
+            <span class="navbar-text me-3"> Bienvenido, <span sec:authentication="name"></span> (Administrativo) </span>
+            <a class="btn btn-outline-light" th:href="@{/logout}">Cerrar Sesión</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-5 mb-5">
+
+    <div th:if="${errorMessage}" class="alert alert-danger shadow-sm no-print" role="alert">
+        <h4 class="alert-heading">Error al Cargar el Comprobante</h4>
+        <p th:text="${errorMessage}"></p>
+        <hr>
+        <a th:href="@{/administrativo/home}" class="btn btn-danger">Volver</a>
+    </div>
+
+    <div th:if="${paymentReceipt}">
+
+        <div class="mb-4 text-center">
+            <h5 class="card-title">Pre-visualización del Comprobante de Pago</h5>
+        </div>
+
+        <div class="printable-area mt-2">
+            <div class="receipt-ticket">
+                <div class="receipt-header">
+                    <h3>Comprobante de Pago</h3>
+                    <span>ID de Transacción: <span th:text="${paymentReceipt.id}">12345</span></span>
+                </div>
+
+                <div class="receipt-body">
+                    <div class="receipt-item">
+                        <span class="label">Fecha de Pago:</span>
+                        <span class="value" th:text="${#temporals.format(paymentReceipt.paymentDate, 'dd/MM/yyyy')}">26/06/2025 17:41</span>
+                    </div>
+                    <div class="receipt-item">
+                        <span class="label">Titular Licencia:</span>
+                        <span class="value" th:text="${paymentReceipt.license.last_name + ', ' + paymentReceipt.license.first_name}">PÉREZ, JUAN</span>
+                    </div>
+                    <div class="receipt-item">
+                        <span class="label">N° Licencia:</span>
+                        <span class="value" th:text="${paymentReceipt.license.dni}">1001</span>
+                    </div>
+                    <hr>
+                    <div class="receipt-item">
+                        <span class="label">Concepto:</span>
+                        <span class="value">Emisión de Licencia de Conducir</span>
+                    </div>
+                    <div class="receipt-item">
+                        <span class="label">Método de Pago:</span>
+                        <span class="value" th:text="${paymentReceipt.paymentMethod.name().replace('_', ' ')}">TARJETA DE CREDITO</span>
+                    </div>
+                    <div class="receipt-item">
+                        <span class="label fw-bold fs-5">IMPORTE TOTAL:</span>
+                        <span class="value fw-bold fs-5" th:text="${'$' + #numbers.formatDecimal(paymentReceipt.license.cost, 1, 'POINT', 2, 'COMMA')}">$5500.00</span>
+                    </div>
+                    <hr>
+                    <div class="receipt-item">
+                        <span class="label">Atendido por:</span>
+                        <span class="value" th:text="${paymentReceipt.administrativo.username}">admin_user</span>
+                    </div>
+                </div>
+
+                <div class="receipt-footer">
+                    <p>Gracias por su pago. Conserve este comprobante.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="print-button-container no-print">
+            <button onclick="generateReceiptPdf()" class="btn btn-success btn-lg shadow">
+                <i class="fas fa-print"></i> Imprimir Comprobante
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+
+    // Se obtiene el ID de la licencia desde el modelo para construir la URL del PDF.
+    const licenseId = /*[[${paymentReceipt?.license?.id}]]*/ null;
+
+    function generateReceiptPdf() {
+        if (!licenseId) {
+            alert("No se pudo obtener el ID de la licencia para generar el comprobante.");
+            return;
+        }
+
+        // Se asume que tienes un endpoint para generar el PDF del comprobante.
+        // Debes crear este endpoint en tu controlador.
+        const pdfUrl = `/administrativo/licencias/comprobante-pdf/${licenseId}`;
+
+        // Abre el PDF en una nueva pestaña para que el usuario pueda imprimirlo o guardarlo.
+        window.open(pdfUrl, '_blank');
+    }
+
+    /*]]>*/
+</script>
+
+</body>
+</html>

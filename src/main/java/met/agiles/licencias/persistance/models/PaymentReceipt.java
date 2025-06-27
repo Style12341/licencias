@@ -18,9 +18,9 @@ public class PaymentReceipt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "license_id")
-    private License license;
+    @OneToOne
+    @JoinColumn(name = "license_id", nullable = false)
+    private License license; // License associated with this payment receipt
 
     @ManyToOne
     @JoinColumn(name = "administrativo_id")

@@ -219,38 +219,37 @@ public class LicenseService {
         return licenseRepository.findByDniAndExpirationDateGreaterThanEqualAndIsValidTrue(dni, LocalDate.now());
     }
 
-    @Transactional // Asegura que ambas operaciones (guardar recibo y actualizar licencia) sean
-                   // atómicas
+    @Transactional
     public License assignPaymentToLicense(Long licenseId, PaymentMethod paymentMethod) {
         License license = licenseRepository.findById(licenseId)
                 .orElseThrow(() -> new RuntimeException("Licencia no encontrada con ID: " + licenseId));
 
-        PaymentReceipt paymentReceipt = new PaymentReceipt();
-        paymentReceipt.setPaymentMethod(paymentMethod);
+        if(paymentReceiptRepository.findByLicenseId(licenseId) == null) {
+            PaymentReceipt paymentReceipt = new PaymentReceipt();
+            paymentReceipt.setPaymentMethod(paymentMethod);
 
-        // Set the user to the current user logged
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
-        paymentReceipt.setAdministrativo(user);
+            // Set the user to the current user logged
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            User user = usuarioRepository.findByUsername(userDetails.getUsername()).orElse(null);
+            paymentReceipt.setAdministrativo(user);
 
-        paymentReceipt.setPaymentDate(LocalDate.now()); // Set the payment date to today
+            paymentReceipt.setPaymentDate(LocalDate.now()); // Set the payment date to today
 
-        if (paymentReceipt.getAdministrativo() == null) {
-            throw new RuntimeException("Usuario administrativo no encontrado.");
+            if (paymentReceipt.getAdministrativo() == null) {
+                throw new RuntimeException("Usuario administrativo no encontrado.");
+            }
+            if (paymentReceipt.getPaymentMethod() == null) {
+                throw new RuntimeException("Método de pago no especificado.");
+            }
+
+            paymentReceipt.setLicense(license); // Associate the payment receipt with the license
+            paymentReceiptRepository.save(paymentReceipt);
         }
-        if (paymentReceipt.getPaymentMethod() == null) {
-            throw new RuntimeException("Método de pago no especificado.");
+        else {
+            throw new RuntimeException("La licencia ya tiene un recibo de pago asociado.");
         }
 
-        paymentReceipt.setLicense(license); // Set the license for the payment receipt
-        PaymentReceipt savedPaymentReceipt = paymentReceiptRepository.save(paymentReceipt);
-
-        if (license.getPaymentReceipts().isEmpty()) {
-            license.setPaymentReceipts(List.of(savedPaymentReceipt)); // Si no hay recibos, se crea una nueva lista
-        } else {
-            license.getPaymentReceipts().add(savedPaymentReceipt); // Agregar el nuevo recibo a la lista existente
-        }
         return licenseRepository.save(license); // Guardar la licencia actualizada
     }
 }
