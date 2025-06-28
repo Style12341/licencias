@@ -71,9 +71,6 @@
                           th:action="@{/admin/users/delete/{id}(id=${usuario.id})}"
                           method="post"
                           class="d-inline">
-                        <!-- insertá uno de los dos mecanismos de CSRF: -->
-                        <!-- <sec:csrfInput/>  O bien -->
-                        <!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/> -->
                         <sec:csrfInput/>
                         <button class="btn btn-sm btn-outline-danger"
                                 type="submit"
