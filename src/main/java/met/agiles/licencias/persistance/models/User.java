@@ -43,9 +43,5 @@ public class User {
     @Column(name = "fecha_de_creacion", nullable = true)
     private LocalDateTime creationDate;
 
-    // Campos adicionales para administrativos
-    private String provincia;
-    
-    private String ciudad;
 }
 
