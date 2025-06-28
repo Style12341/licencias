@@ -11,12 +11,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @Controller
@@ -49,15 +46,24 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public String mostrarGestionUsuarios(Model model) {
-
-        List<User> all = userService.getAllUsers();
-
-        model.addAttribute("administrativos", all);
+    public String mostrarGestionUsuarios(
+            @RequestParam(value="nombre", required=false) String nombre,
+            Model model,
+            Principal principal
+    ) {
+        List<User> administrativos;
+        if (nombre != null && !nombre.trim().isEmpty()) {
+            administrativos = userService.buscarPorNombre(nombre.trim());
+        } else {
+            administrativos = userService.getAllUsers();
+        }
+        model.addAttribute("administrativos", administrativos);
+        model.addAttribute("currentUsername", principal.getName());
+        model.addAttribute("nombre", nombre);   // para repoblar el input
         model.addAttribute("title", "Gestión de Usuarios");
         return "admin/manageUsers";
-
     }
+
 
     @GetMapping("/users/new")
     public String mostrarFormularioAlta(Model model) {
@@ -65,6 +71,21 @@ public class AdminController {
         model.addAttribute("roles", Role.values());
         model.addAttribute("title", "Alta de Usuario");
         return "admin/userForm";
+    }
+
+    @GetMapping("/admin/users")
+    public String listarUsuarios(@RequestParam(required = false) String nombre, Model model, Principal principal) {
+        List<User> administrativos;
+
+        if (nombre != null && !nombre.trim().isEmpty()) {
+            administrativos = userService.buscarPorNombre(nombre.trim());
+        } else {
+            administrativos = userService.getAllUsers();
+        }
+
+        model.addAttribute("administrativos", administrativos);
+        model.addAttribute("currentUsername", principal.getName());
+        return "admin/usuarios";
     }
 
     @PostMapping("/users/save")
@@ -96,9 +117,30 @@ public class AdminController {
     }
 
     @PostMapping("/users/delete/{id}")
-    public String eliminarUsuario(@PathVariable Long id) {
+    public String eliminarUsuario(@PathVariable Long id, Principal principal) {
+        User userToDelete = userService.getUserById(id);
+        if (userToDelete != null && userToDelete.getUsername().equals(principal.getName())) {
+            // No permitir eliminarse a sí mismo
+            return "redirect:/admin/users?error=NoSePuedeEliminarASiMismo";
+        }
         usuarioRepository.deleteById(id);
         return "redirect:/admin/users";
+    }
+
+    @GetMapping("/users/edit/{id}")
+    public String mostrarFormularioEdicion(@PathVariable Long id, Model model) {
+        User user = userService.getUserById(id);
+        if (user == null) {
+            return "redirect:/admin/users?error=UsuarioNoEncontrado";
+        }
+        model.addAttribute("usuario", user);
+        return "admin/editUserForm";
+    }
+
+    @PostMapping("/users/update")
+    public String actualizarUsuario(@ModelAttribute("usuario") User userForm, Principal principal) {
+        userService.actualizarDatosUsuario(userForm, principal.getName());
+        return "redirect:/admin/users?success=modificado";
     }
 
 }
