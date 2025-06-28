@@ -1,5 +1,6 @@
 package met.agiles.licencias.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.models.UserModificationAudit;
 import met.agiles.licencias.persistance.repository.UserModificationAuditRepository;
@@ -87,11 +88,20 @@ public class UserService {
     }
 
     public List<User> buscarPorNombre(String nombre) {
-        return usuarioRepository.findByFirstNameContainingIgnoreCase(nombre);
+
+        return usuarioRepository.findByFirstNameContainingIgnoreCaseAndActiveTrue(nombre);
+
     }
+
+    public void disableUser(Long id) {
+            User u = usuarioRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            u.setActive(false);
+            usuarioRepository.save(u);
+        }
 
     public User getUserById(Long id) {return usuarioRepository.findById(id).orElse(null);}
     public List<User> getAllUsers() {
-        return usuarioRepository.findAll();
+        return usuarioRepository.findByActiveTrue();
     }
 }

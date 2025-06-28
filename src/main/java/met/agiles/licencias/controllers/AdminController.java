@@ -123,9 +123,11 @@ public class AdminController {
             // No permitir eliminarse a sí mismo
             return "redirect:/admin/users?error=NoSePuedeEliminarASiMismo";
         }
-        usuarioRepository.deleteById(id);
+        // Llamamos al servicio que marca active = false
+        userService.disableUser(id);
         return "redirect:/admin/users";
     }
+
 
     @GetMapping("/users/edit/{id}")
     public String mostrarFormularioEdicion(@PathVariable Long id, Model model) {
