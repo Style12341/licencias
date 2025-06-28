@@ -36,16 +36,9 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
-    @ManyToOne
-    @JoinColumn(name = "created_by", nullable = true)
-    private User createdByUser;
-
-    @Column(name = "fecha_de_creacion", nullable = true)
-    private LocalDateTime creationDate;
-
     // Campos adicionales para administrativos
     private String provincia;
-    
+
     private String ciudad;
 }
 
