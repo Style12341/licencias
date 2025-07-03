@@ -83,4 +83,10 @@ public class HolderController {
         }
     }
 
+    @GetMapping("/administrativo/titulares/gestionar")
+    public String showHoldersList(Model model) {
+        model.addAttribute("holders", holderRepository.findAll());
+        model.addAttribute("title", "Gestión de Titulares");
+        return "administrativo/titulares/holdersList";
+    }
 }
