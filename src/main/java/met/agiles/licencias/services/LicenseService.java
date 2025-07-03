@@ -2,6 +2,7 @@ package met.agiles.licencias.services;
 
 import jakarta.transaction.Transactional;
 import met.agiles.licencias.controllers.AdministrativoController;
+import met.agiles.licencias.enums.BloodType;
 import met.agiles.licencias.enums.LicenseClass;
 import met.agiles.licencias.enums.PaymentMethod;
 import met.agiles.licencias.persistance.models.*;
@@ -183,13 +184,21 @@ public class LicenseService {
         return true; // Not a professional license
     }
 
-    public List<License> searchFilteredLicenses(String dni, String apellido, String orden) {
+    public List<License> searchFilteredLicenses(String dni, String apellido, String nombre,
+                                                BloodType bloodType, Boolean isDonor, Boolean isValid, String orden) {
+        LocalDate today = LocalDate.now();
         List<License> todas = licenseRepository.findAll();
 
         return todas.stream()
+                .filter(l -> l.getExpirationDate().isAfter(today)) // Solo licencias vigentes
                 .filter(l -> dni == null || dni.isBlank() || l.getDni().contains(dni))
-                .filter(l -> apellido == null || apellido.isBlank()
-                        || l.getLast_name().toLowerCase().contains(apellido.toLowerCase()))
+                .filter(l -> apellido == null || apellido.isBlank() ||
+                        l.getLast_name().toLowerCase().contains(apellido.toLowerCase()))
+                .filter(l -> nombre == null || nombre.isBlank() ||
+                        l.getFirst_name().toLowerCase().contains(nombre.toLowerCase()))
+                .filter(l -> bloodType == null || l.getHolder().getBloodType() == bloodType)
+                .filter(l -> isDonor == null || l.getHolder().isDonor() == isDonor)
+                .filter(l -> isValid == null || l.getIsValid() == isValid)
                 .sorted((l1, l2) -> {
                     if ("desc".equalsIgnoreCase(orden)) {
                         return l2.getIssuanceDate().compareTo(l1.getIssuanceDate());

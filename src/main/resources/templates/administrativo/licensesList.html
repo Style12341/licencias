@@ -11,105 +11,104 @@
       <div class="container-fluid">
         <a class="navbar-brand" href="/administrativo/home">Sistema de Licencias</a>
         <div class="navbar-nav ms-auto">
-          <span class="navbar-text me-3"> Bienvenido, <span sec:authentication="name"></span> (Administrativo) </span>
-          <a class="btn btn-outline-light" th:href="@{/logout}">Cerrar Sesión</a>
+            <span class="navbar-text me-3"> Bienvenido, <span sec:authentication="name"></span> (Administrativo) </span>
+            <a class="btn btn-outline-light" th:href="@{/logout}">Cerar Sesión</a>
         </div>
       </div>
     </nav>
-    <!-- Contenido -->
+
     <div class="container mt-5">
-      <h2 class="mb-4">Listado de Licencias</h2>
+        <h2 class="mb-4">Listado de Licencias</h2>
 
-      <!-- Mensajes de estado -->
-      <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i>
-        <span th:text="${success}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
+        <!-- Formulario de búsqueda actualizado -->
+        <form class="row g-3 mb-4" method="get" th:action="@{/administrativo/licencias/list}">
+            <div class="col-md-3">
+                <input type="text" name="dni" class="form-control" placeholder="Buscar por DNI" th:value="${dni}" />
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="apellido" class="form-control" placeholder="Buscar por Apellido" th:value="${apellido}" />
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="nombre" class="form-control" placeholder="Buscar por Nombre" th:value="${nombre}" />
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="bloodType">
+                    <option value="">Todos los grupos sanguíneos</option>
+                    <option th:each="type : ${T(met.agiles.licencias.enums.BloodType).values()}"
+                            th:value="${type}"
+                            th:text="${type.shortName}"
+                            th:selected="${bloodType != null and bloodType == type}"></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="isDonor" id="isDonor"
+                           th:checked="${isDonor != null and isDonor}" />
+                    <label class="form-check-label" for="isDonor">Donante de órganos</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="isValid" id="isValid"
+                           th:checked="${isValid != null and isValid}" />
+                    <label class="form-check-label" for="isValid">Solo licencias válida</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+              <select class="form-select" name="orden">
+                <option value="asc" th:selected="${orden == 'asc'}">Fecha ↑</option>
+                <option value="desc" th:selected="${orden == 'desc'}">Fecha ↓</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-success w-100">Buscar</button>
+            </div>
+        </form>
 
-      <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        <span th:text="${error}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
+        <!-- Tabla de resultados (opcional: agregar columnas para bloodType e isDonor) -->
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered align-middle">
+              <thead class="table-success">
+                <tr>
+                    <th>DNI</th>
+                    <th>Apellido</th>
+                    <th>Nombre</th>
+                    <th>Ciudad</th>
+                    <th>Fecha Emisión</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Clase(s)</th>
+                    <th>Grupo Sanguíneo</th>
+                    <th>Donante</th>
+                    <th>Válida</th>
+                    <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="licencia : ${licencias}">
+                    <td th:text="${licencia.dni}">12345678</td>
+                    <td th:text="${licencia.last_name}">Pérez</td>
+                    <td th:text="${licencia.first_name}">Juan</td>
+                    <td th:text="${licencia.city}">Santa Fe</td>
+                    <td th:text="${#temporals.format(licencia.issuanceDate, 'dd/MM/yyyy')}">01/06/2025</td>
+                    <td th:text="${#temporals.format(licencia.expirationDate, 'dd/MM/yyyy')}">01/06/2029</td>
+                    <td th:text="${licencia.licenseClasses}">A, B</td>
+                    <td th:text="${licencia.holder.bloodType != null ? licencia.holder.bloodType.shortName : 'N/A'}">A+</td>
+                    <td th:text="${licencia.holder.isDonor != null and licencia.holder.isDonor ? 'Sí' : 'No'}">Sí</td>
+                    <td th:text="${licencia.isValid ? 'Sí' : 'No'}">Sí</td>
 
-      <!-- Formulario de búsqueda -->
-      <form class="row g-3 mb-4" method="get" th:action="@{/administrativo/licencias/list}">
-        <div class="col-md-4">
-          <input type="text" name="dni" class="form-control" placeholder="Buscar por DNI" th:value="${dni}" />
+                    <td>
+                        <a th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}"
+                           class="btn btn-sm btn-outline-primary">Imprimir</a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(licencias)}">
+                    <td colspan="10" class="text-center">No se encontraron licencias.</td>
+                </tr>
+              </tbody>
+            </table>
         </div>
-        <div class="col-md-4">
-          <input
-            type="text"
-            name="apellido"
-            class="form-control"
-            placeholder="Buscar por Apellido"
-            th:value="${apellido}"
-          />
-        </div>
-        <div class="col-md-2">
-          <select class="form-select" name="orden">
-            <option value="asc" th:selected="${orden == 'asc'}">Fecha ↑</option>
-            <option value="desc" th:selected="${orden == 'desc'}">Fecha ↓</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-success w-100">Buscar</button>
-        </div>
-      </form>
-      <!-- Tabla de resultados -->
-      <div class="table-responsive">
-        <table class="table table-striped table-bordered align-middle">
-          <thead class="table-success">
-            <tr>
-              <th>DNI</th>
-              <th>Apellido</th>
-              <th>Nombre</th>
-              <th>Ciudad</th>
-              <th>Fecha Emisión</th>
-              <th>Fecha Vencimiento</th>
-              <th>Clase(s)</th>
-              <th>Version</th>
-              <th>Valida</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr th:each="licencia : ${licencias}">
-              <td th:text="${licencia.dni}">12345678</td>
-              <td th:text="${licencia.last_name}">Pérez</td>
-              <td th:text="${licencia.first_name}">Juan</td>
-              <td th:text="${licencia.city}">Santa Fe</td>
-              <td th:text="${#temporals.format(licencia.issuanceDate, 'dd/MM/yyyy')}">01/06/2025</td>
-              <td th:text="${#temporals.format(licencia.expirationDate, 'dd/MM/yyyy')}" }>01/06/2029</td>
-              <td th:text="${licencia.licenseClasses}">A, B</td>
-              <td th:text="${licencia.version}">1.0</td>
-              <td>
-                <span th:if="${licencia.isValid}" class="badge bg-success">Válida</span>
-                <span th:if="${!licencia.isValid}" class="badge bg-danger">Inválida</span>
-              </td>
-              <td>
-                <a th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}" class="btn btn-sm btn-primary">Imprimir</a>
-                  <a th:href="@{/administrativo/licencias/{id}/comprobante(id=${licencia.id})}" class="btn btn-sm btn-outline-secondary">Ver comprobante</a>
-                <a
-                  th:href="${licencia.isValid} ? @{/administrativo/licencias/{id}/copiar(id=${licencia.id})} : '#'"
-                  th:class="${licencia.isValid} ? 'btn btn-sm btn-warning' : 'btn btn-sm btn-secondary disabled'"
-                  th:title="${licencia.isValid} ? 'Emitir copia de la licencia' : 'No se puede copiar licencia inválida'"
-                  th:onclick="${licencia.isValid} ? '' : 'return false;'"
-                  th:style="${licencia.isValid} ? '' : 'pointer-events: none; opacity: 0.6;'"
-                  >Emitir Copia
-                </a>
-              </td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(licencias)}">
-              <td colspan="8" class="text-center">No se encontraron licencias.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
     </div>
 
-    <!-- Bootstrap -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-  </body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>
