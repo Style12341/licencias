@@ -49,6 +49,32 @@ public class HolderService {
         return holderRepository.save(holder);
     }
 
+    public Holder updateHolder(String dni, HolderRequestDto dto) {
+        Holder existingHolder = holderRepository.findById(dni)
+                .orElseThrow(() -> new IllegalArgumentException("Titular inexistente"));
+
+        // Validación de edad mínima (ejemplo: 16 años)
+        if (Period.between(dto.getBirthDate(), LocalDate.now()).getYears() < 16) {
+            throw new IllegalArgumentException("El titular debe tener al menos 16 años. No es posible especificar esa edad.");
+        }
+
+        BeanUtils.copyProperties(dto, existingHolder, "dni", "administrative");
+        return holderRepository.save(existingHolder);
+    }
+
+    public List<Holder> searchFilteredHolders(String dni, String name, String lastname, String city, BloodType bloodType, Boolean donor) {
+        List<Holder> holders = holderRepository.findAll();
+
+        return holders.stream()
+                .filter(holder -> (dni == null || dni.isBlank() || holder.getDni().contains(dni)) &&
+                                  (name == null || name.isBlank() || holder.getName().toLowerCase().contains(name)) &&
+                                  (lastname == null || lastname.isBlank() ||holder.getLastName().toLowerCase().contains(lastname)) &&
+                                  (city == null || city.isBlank() || holder.getCity().toLowerCase().contains(city)) &&
+                                  (bloodType == null || holder.getBloodType().toString().length() > 10 || holder.getBloodType().toString().equalsIgnoreCase(bloodType.toString())) &&
+                                  (donor == null || holder.isDonor() == donor))
+                .toList();
+    }
+
     public Holder getHolderByDni(String dni) {
         return holderRepository.findById(dni).orElse(null);
     }

@@ -243,7 +243,7 @@ public class AdministrativoController {
 
             return "administrativo/licenseReceipt";
         } catch (RuntimeException e) {
-            return "redirect:/administrativo/licenseReceipt?error=internal_error";
+            return "redirect:/administrativo/licencias/comprobante-error?error=notprinted";
         }
     }
 
