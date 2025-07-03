@@ -1,5 +1,6 @@
 package met.agiles.licencias.controllers;
 
+import met.agiles.licencias.enums.BloodType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +18,7 @@ import met.agiles.licencias.persistance.repository.HolderRepository;
 import met.agiles.licencias.services.HolderService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -81,6 +83,96 @@ public class HolderController {
             response.put("error", "Error interno del servidor");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    @GetMapping("/administrativo/titulares/gestionar")
+    public String showHoldersList(Model model) {
+        model.addAttribute("holders", holderRepository.findAll());
+        model.addAttribute("title", "Listado de Titulares");
+        return "administrativo/titulares/holdersList";
+    }
+
+    @GetMapping("/administrativo/titulares/list")
+    public String showHoldersWithFilter(
+            @RequestParam(required = false) String dni,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String lastName,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) BloodType bloodType,
+            @RequestParam(required = false) Boolean donor,
+            Model model){
+
+        List<Holder> holders = holderService.searchFilteredHolders(dni, name, lastName, city, bloodType, donor);
+
+        model.addAttribute("title", "Listado de Titulares");
+        model.addAttribute("holders", holders);
+        model.addAttribute("dni", dni);
+        model.addAttribute("name", name);
+        model.addAttribute("lastName", lastName);
+        model.addAttribute("city", city);
+        model.addAttribute("bloodType", bloodType);
+        model.addAttribute("donor", donor);
+
+        return "administrativo/titulares/holdersList";
+    }
+
+    @GetMapping("/administrativo/titulares/{dni}")
+    public String mostrarFormularioEdicion(@PathVariable String dni, Model model) {
+        try {
+            Holder holder = holderService.getHolderByDni(dni);
+            if(holder == null) {
+                System.out.println("Titular no encontrado");
+                return "redirect:/administrativo/titulares/editar-error?error=holdernotfound";
+            }
+
+            model.addAttribute("holder", holder);
+            return "administrativo/titulares/edit";
+
+        } catch (Exception e) {
+            model.addAttribute("error", "No se pudo encontrar el titular con DNI: " + dni);
+            System.out.println("Error al buscar el titular: " + e.getMessage());
+            return "redirect:/administrativo/titulares/editar-error?error=internal_error";
+        }
+    }
+
+    @PostMapping("/administrativo/titulares/editar/{dni}")
+    public String actualizarTitular(@PathVariable String dni,
+                                    @ModelAttribute("holder") @Valid HolderRequestDto holder,
+                                    BindingResult result,
+                                    Model model) {
+
+        if (result.hasErrors()) {
+            // En caso de errores, volver a pasar el objeto al modelo
+            model.addAttribute("holder", holder);
+            return "administrativo/titulares/edit";
+        }
+
+        try {
+            holderService.updateHolder(dni, holder);
+            System.out.println("Titular actualizado correctamente: \n" + holder);
+            return "redirect:/administrativo/titulares/gestionar";
+
+        } catch (Exception e) {
+            System.out.println("Error al actualizar el titular: " + e.getMessage());
+            return "redirect:/administrativo/titulares/editar-error";
+        }
+    }
+
+    @GetMapping("/administrativo/titulares/editar-error")
+    public String showLicenseReceiptError(@RequestParam(name = "error") String errorType, Model model) {
+        switch (errorType) {
+            case "holdernotfound":
+                model.addAttribute("errorMessage", "Error: Titular no encontrado.");
+                break;
+            case "internal_error":
+                model.addAttribute("errorMessage", "Ha ocurrido un error interno al editar el titular.");
+                break;
+            default:
+                model.addAttribute("errorMessage", "Ha ocurrido un error inesperado.");
+                break;
+        }
+        model.addAttribute("title", "Error al Editar Titular");
+        return "administrativo/titulares/edit";
     }
 
 }
