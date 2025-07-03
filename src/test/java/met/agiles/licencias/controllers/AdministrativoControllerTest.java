@@ -80,7 +80,8 @@ class AdministrativoControllerTest {
     @WithMockUser(roles = "ADMINISTRATIVO")
     void mostrarLicenciasConFiltro_deberiaRetornarVistaConLicencias() throws Exception {
         // Simular que el servicio devuelve una lista con nuestra licencia de prueba
-        when(licenseService.searchFilteredLicenses(any(), any(), any())).thenReturn(List.of(mockLicense));
+        when(licenseService.searchFilteredLicenses("12345678", null, null, null, null, "desc"))
+                .thenReturn(List.of(mockLicense));
 
         mockMvc.perform(get("/administrativo/licencias/list")
                         .param("dni", "12345678")
@@ -91,7 +92,7 @@ class AdministrativoControllerTest {
                 .andExpect(model().attribute("licencias", List.of(mockLicense)));
 
         // Verificar que el servicio fue llamado con los parámetros correctos
-        verify(licenseService).searchFilteredLicenses("12345678", null, "desc");
+        verify(licenseService).searchFilteredLicenses("12345678", null, null, null, null, "desc");
     }
 
     @Test
@@ -104,14 +105,15 @@ class AdministrativoControllerTest {
                 .andExpect(model().attribute("busquedaRealizada", false));
 
         // Verificar que el servicio NUNCA fue llamado porque no hay parámetros de búsqueda
-        verify(licenseService, never()).searchFilteredLicenses(any(), any(), any());
+        verify(licenseService, never()).searchFilteredLicenses(any(), any(), any(), any(), any(), any());
     }
 
     @Test
     @WithMockUser(roles = "ADMINISTRATIVO")
     void showAndSearchLicensesPage_cuandoHayBusqueda_deberiaRetornarResultados() throws Exception {
         // Simular que el servicio encuentra una licencia
-        when(licenseService.searchFilteredLicenses("12345678", null, "asc")).thenReturn(List.of(mockLicense));
+        when(licenseService.searchFilteredLicenses("12345678", null, null, null, null, "asc"))
+                .thenReturn(List.of(mockLicense));
 
         mockMvc.perform(get("/administrativo/licencias/buscar")
                         .param("dni", "12345678"))
@@ -121,7 +123,7 @@ class AdministrativoControllerTest {
                 .andExpect(model().attribute("busquedaRealizada", true));
 
         // Verificar que el servicio fue llamado
-        verify(licenseService).searchFilteredLicenses("12345678", null, "asc");
+        verify(licenseService).searchFilteredLicenses("12345678", null, null, null, null, "asc");
     }
 
     @Test

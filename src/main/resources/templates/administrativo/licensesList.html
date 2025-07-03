@@ -12,22 +12,40 @@
         <a class="navbar-brand" href="/administrativo/home">Sistema de Licencias</a>
         <div class="navbar-nav ms-auto">
             <span class="navbar-text me-3"> Bienvenido, <span sec:authentication="name"></span> (Administrativo) </span>
-            <a class="btn btn-outline-light" th:href="@{/logout}">Cerrar Sesión</a>
+            <a class="btn btn-outline-light" th:href="@{/logout}">Cerar Sesión</a>
         </div>
     </div>
 </nav>
 
-<!-- Contenido -->
 <div class="container mt-5">
     <h2 class="mb-4">Listado de Licencias</h2>
 
-    <!-- Formulario de búsqueda -->
+    <!-- Formulario de búsqueda actualizado -->
     <form class="row g-3 mb-4" method="get" th:action="@{/administrativo/licencias/list}">
-        <div class="col-md-4">
-            <input type="text" name="dni" class="form-control" placeholder="Buscar por DNI" th:value="${dni}">
+        <div class="col-md-3">
+            <input type="text" name="dni" class="form-control" placeholder="Buscar por DNI" th:value="${dni}" />
         </div>
-        <div class="col-md-4">
-            <input type="text" name="apellido" class="form-control" placeholder="Buscar por Apellido" th:value="${apellido}">
+        <div class="col-md-3">
+            <input type="text" name="apellido" class="form-control" placeholder="Buscar por Apellido" th:value="${apellido}" />
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="nombre" class="form-control" placeholder="Buscar por Nombre" th:value="${nombre}" />
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" name="bloodType">
+                <option value="">Todos los grupos sanguíneos</option>
+                <option th:each="type : ${T(met.agiles.licencias.enums.BloodType).values()}"
+                        th:value="${type}"
+                        th:text="${type.shortName}"
+                        th:selected="${bloodType != null and bloodType == type}"></option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="isDonor" id="isDonor"
+                       th:checked="${isDonor != null and isDonor}" />
+                <label class="form-check-label" for="isDonor">Donante de órganos</label>
+            </div>
         </div>
         <div class="col-md-2">
             <select class="form-select" name="orden">
@@ -40,7 +58,7 @@
         </div>
     </form>
 
-    <!-- Tabla de resultados -->
+    <!-- Tabla de resultados (opcional: agregar columnas para bloodType e isDonor) -->
     <div class="table-responsive">
         <table class="table table-striped table-bordered align-middle">
             <thead class="table-success">
@@ -52,6 +70,8 @@
                 <th>Fecha Emisión</th>
                 <th>Fecha Vencimiento</th>
                 <th>Clase(s)</th>
+                <th>Grupo Sanguíneo</th>
+                <th>Donante</th>
                 <th>Acciones</th>
             </tr>
             </thead>
@@ -62,21 +82,23 @@
                 <td th:text="${licencia.first_name}">Juan</td>
                 <td th:text="${licencia.city}">Santa Fe</td>
                 <td th:text="${#temporals.format(licencia.issuanceDate, 'dd/MM/yyyy')}">01/06/2025</td>
-                <td th:text="${#temporals.format(licencia.expirationDate, 'dd/MM/yyyy')}"}>01/06/2029</td>
+                <td th:text="${#temporals.format(licencia.expirationDate, 'dd/MM/yyyy')}">01/06/2029</td>
                 <td th:text="${licencia.licenseClasses}">A, B</td>
+                <td th:text="${licencia.holder.bloodType != null ? licencia.holder.bloodType.shortName : 'N/A'}">A+</td>
+                <td th:text="${licencia.holder.isDonor != null and licencia.holder.isDonor ? 'Sí' : 'No'}">Sí</td>
                 <td>
-                    <a th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}" class="btn btn-sm btn-outline-primary">Imprimir</a>
+                    <a th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}"
+                       class="btn btn-sm btn-outline-primary">Imprimir</a>
                 </td>
             </tr>
             <tr th:if="${#lists.isEmpty(licencias)}">
-                <td colspan="8" class="text-center">No se encontraron licencias.</td>
+                <td colspan="10" class="text-center">No se encontraron licencias.</td>
             </tr>
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Bootstrap -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

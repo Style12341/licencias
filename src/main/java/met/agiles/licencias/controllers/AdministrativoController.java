@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.lowagie.text.DocumentException;
+import met.agiles.licencias.enums.BloodType;
 import met.agiles.licencias.enums.PaymentMethod;
 import met.agiles.licencias.services.PdfGeneratorService;
 import org.slf4j.Logger;
@@ -142,15 +143,22 @@ public class AdministrativoController {
     public String mostrarLicenciasConFiltro(
             @RequestParam(required = false) String dni,
             @RequestParam(required = false) String apellido,
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) BloodType bloodType,
+            @RequestParam(required = false) Boolean isDonor,
             @RequestParam(required = false, defaultValue = "asc") String orden,
             Model model) {
 
-        List<License> licencias = licenseService.searchFilteredLicenses(dni, apellido, orden);
+        List<License> licencias = licenseService.searchFilteredLicenses(
+                dni, apellido, nombre, bloodType, isDonor, orden);
 
         model.addAttribute("title", "Listado de Licencias");
         model.addAttribute("licencias", licencias);
         model.addAttribute("dni", dni);
         model.addAttribute("apellido", apellido);
+        model.addAttribute("nombre", nombre);
+        model.addAttribute("bloodType", bloodType);
+        model.addAttribute("isDonor", isDonor);
         model.addAttribute("orden", orden);
 
         return "administrativo/licensesList";
@@ -168,7 +176,7 @@ public class AdministrativoController {
         boolean realizarBusqueda = (dni != null && !dni.isBlank()) || (apellido != null && !apellido.isBlank());
 
         if (realizarBusqueda) {
-            licencias = licenseService.searchFilteredLicenses(dni, apellido, orden);
+            licencias = licenseService.searchFilteredLicenses(dni, apellido, null, null, null, orden);
         }
 
         model.addAttribute("title", "Buscar Licencia");
