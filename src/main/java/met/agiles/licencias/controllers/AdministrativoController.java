@@ -146,11 +146,12 @@ public class AdministrativoController {
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) BloodType bloodType,
             @RequestParam(required = false) Boolean isDonor,
+            @RequestParam(required = false) Boolean isValid,
             @RequestParam(required = false, defaultValue = "asc") String orden,
             Model model) {
 
         List<License> licencias = licenseService.searchFilteredLicenses(
-                dni, apellido, nombre, bloodType, isDonor, orden);
+                dni, apellido, nombre, bloodType, isDonor, isValid, orden);
 
         model.addAttribute("title", "Listado de Licencias");
         model.addAttribute("licencias", licencias);
@@ -159,6 +160,7 @@ public class AdministrativoController {
         model.addAttribute("nombre", nombre);
         model.addAttribute("bloodType", bloodType);
         model.addAttribute("isDonor", isDonor);
+        model.addAttribute("isValid", isValid);
         model.addAttribute("orden", orden);
 
         return "administrativo/licensesList";
@@ -176,7 +178,7 @@ public class AdministrativoController {
         boolean realizarBusqueda = (dni != null && !dni.isBlank()) || (apellido != null && !apellido.isBlank());
 
         if (realizarBusqueda) {
-            licencias = licenseService.searchFilteredLicenses(dni, apellido, null, null, null, orden);
+            licencias = licenseService.searchFilteredLicenses(dni, apellido, null, null, null, null, orden);
         }
 
         model.addAttribute("title", "Buscar Licencia");

@@ -47,6 +47,13 @@
                 <label class="form-check-label" for="isDonor">Donante de órganos</label>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="isValid" id="isValid"
+                       th:checked="${isValid != null and isValid}" />
+                <label class="form-check-label" for="isValid">Solo licencias válida</label>
+            </div>
+        </div>
         <div class="col-md-2">
             <select class="form-select" name="orden">
                 <option value="asc" th:selected="${orden == 'asc'}">Fecha ↑</option>
@@ -72,6 +79,7 @@
                 <th>Clase(s)</th>
                 <th>Grupo Sanguíneo</th>
                 <th>Donante</th>
+                <th>Válida</th>
                 <th>Acciones</th>
             </tr>
             </thead>
@@ -86,6 +94,8 @@
                 <td th:text="${licencia.licenseClasses}">A, B</td>
                 <td th:text="${licencia.holder.bloodType != null ? licencia.holder.bloodType.shortName : 'N/A'}">A+</td>
                 <td th:text="${licencia.holder.isDonor != null and licencia.holder.isDonor ? 'Sí' : 'No'}">Sí</td>
+                <td th:text="${licencia.isValid ? 'Sí' : 'No'}">Sí</td>
+
                 <td>
                     <a th:href="@{/administrativo/licencias/imprimir/{id}(id=${licencia.id})}"
                        class="btn btn-sm btn-outline-primary">Imprimir</a>

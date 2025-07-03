@@ -154,7 +154,7 @@ public class LicenseService {
     }
 
     public List<License> searchFilteredLicenses(String dni, String apellido, String nombre,
-                                                BloodType bloodType, Boolean isDonor, String orden) {
+                                                BloodType bloodType, Boolean isDonor, Boolean isValid, String orden) {
         LocalDate today = LocalDate.now();
         List<License> todas = licenseRepository.findAll();
 
@@ -167,6 +167,7 @@ public class LicenseService {
                         l.getFirst_name().toLowerCase().contains(nombre.toLowerCase()))
                 .filter(l -> bloodType == null || l.getHolder().getBloodType() == bloodType)
                 .filter(l -> isDonor == null || l.getHolder().isDonor() == isDonor)
+                .filter(l -> isValid == null || l.getIsValid() == isValid)
                 .sorted((l1, l2) -> {
                     if ("desc".equalsIgnoreCase(orden)) {
                         return l2.getIssuanceDate().compareTo(l1.getIssuanceDate());
