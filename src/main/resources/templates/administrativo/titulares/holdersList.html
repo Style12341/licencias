@@ -82,8 +82,8 @@
                 <td th:text="${holder.bloodType?.shortName ?: 'N/A'}">GS</td>
                 <td th:text="${holder.donor ? 'Sí' : 'No'}">Donante</td>
                 <td>
-                    <a th:href="@{/administrativo/titulares/${holder.dni}}" class="btn btn-sm btn-outline-error">Modificar</a>
                     <a th:href="@{/administrativo/licencias/list(dni=${holder.dni})}" class="btn btn-sm btn-outline-primary">Ver Licencias</a>
+                    <a th:href="@{/administrativo/titulares/{dni}(dni=${holder.dni})}" class="btn btn-sm btn-outline-warning">Editar</a>
                 </td>
             </tr>
             <tr th:if="${#lists.isEmpty(holders)}">
