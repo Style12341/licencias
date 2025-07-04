@@ -6,6 +6,7 @@ import met.agiles.licencias.persistance.models.Holder;
 import met.agiles.licencias.persistance.models.License;
 import met.agiles.licencias.persistance.models.User;
 import met.agiles.licencias.persistance.repository.HolderRepository;
+import met.agiles.licencias.persistance.repository.PaymentReceiptRepository;
 import met.agiles.licencias.persistance.repository.UsuarioRepository;
 import met.agiles.licencias.services.CustomUserDetailsService;
 import met.agiles.licencias.services.LicenseReportService;
@@ -37,503 +38,513 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SecurityConfig.class)
 class AdministrativoControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    // Mockear los servicios que son dependencias del controlador
-    @MockBean
-    private LicenseService licenseService;
-
-    @MockBean
-    private HolderRepository holderRepository;
-
-    @MockBean
-    private UsuarioRepository usuarioRepository;
-
-    @MockBean
-    private PdfGeneratorService pdfGeneratorService;
-
-    @MockBean
-    private CustomUserDetailsService customUserDetailsService;
-
-    @MockBean
-    private LicenseReportService licenseReportService;
-
-    private License mockLicense;
-    private Holder mockHolder;
-
-    // Additional test data for reissue tests
-    private User mockUser;
-    private License mockActiveLicense;
-    private License mockNewLicense;
-
-    @BeforeEach
-    void setUp() {
-        mockHolder = new Holder();
-        mockHolder.setDni("12345678");
-        mockHolder.setName("JUAN");
-        mockHolder.setLastName("GONZALEZ");
-        mockHolder.setBirthDate(LocalDate.of(1990, 5, 15));
-
-        mockLicense = new License();
-        mockLicense.setId(1L);
-        mockLicense.setLast_name("GONZALEZ");
-        mockLicense.setFirst_name("JUAN");
-        mockLicense.setDni("12345678");
-        mockLicense.setBirthDate(LocalDate.of(1990, 5, 15));
-        mockLicense.setIssuanceDate(LocalDate.now());
-        mockLicense.setExpirationDate(LocalDate.now().plusYears(5));
-        mockLicense.setHolder(mockHolder);
-        mockLicense.setIsValid(true);
-
-        mockUser = new User();
-        mockUser.setId(1L);
-        mockUser.setUsername("admin");
-        mockUser.setPassword("password");
-
-        mockActiveLicense = new License();
-        mockActiveLicense.setId(2L);
-        mockActiveLicense.setDni("12345678");
-        mockActiveLicense.setIsValid(true);
-        mockActiveLicense.setHolder(mockHolder);
-        mockActiveLicense.setIssuanceDate(LocalDate.now().minusYears(1));
-        mockActiveLicense.setExpirationDate(LocalDate.now().plusYears(4));
-        mockNewLicense = new License();
-        mockNewLicense.setId(3L);
-        mockNewLicense.setDni("12345678");
-        mockNewLicense.setIsValid(true);
-        mockNewLicense.setHolder(mockHolder);
-        mockNewLicense.setIssuanceDate(LocalDate.now());
-        mockNewLicense.setExpirationDate(LocalDate.now().plusYears(5));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void mostrarLicenciasConFiltro_deberiaRetornarVistaConLicencias() throws Exception {
-        // Simular que el servicio devuelve una lista con nuestra licencia de prueba
-        when(licenseService.searchFilteredLicenses("12345678", null, null, null, null, null,"desc"))
-                .thenReturn(List.of(mockLicense));
-
-        mockMvc.perform(get("/administrativo/licencias/list")
-                .param("dni", "12345678")
-                .param("orden", "desc"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("administrativo/licensesList"))
-                .andExpect(model().attributeExists("licencias"))
-                .andExpect(model().attribute("licencias", List.of(mockLicense)));
-
-        // Verificar que el servicio fue llamado con los parámetros correctos
-        verify(licenseService).searchFilteredLicenses("12345678", null, null, null, null, null,"desc");
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void showAndSearchLicensesPage_cuandoNoHayBusqueda_deberiaRetornarVistaVacia() throws Exception {
-        mockMvc.perform(get("/administrativo/licencias/buscar"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("administrativo/searchLicenses"))
-                .andExpect(model().attribute("licencias", Collections.emptyList()))
-                .andExpect(model().attribute("busquedaRealizada", false));
-
-        // Verificar que el servicio NUNCA fue llamado porque no hay parámetros de búsqueda
-        verify(licenseService, never()).searchFilteredLicenses(any(), any(), any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void showAndSearchLicensesPage_cuandoHayBusqueda_deberiaRetornarResultados() throws Exception {
-        // Simular que el servicio encuentra una licencia
-        when(licenseService.searchFilteredLicenses("12345678", null, null, null, null, null, "asc"))
-                .thenReturn(List.of(mockLicense));
-
-        mockMvc.perform(get("/administrativo/licencias/buscar")
-                .param("dni", "12345678"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("administrativo/searchLicenses"))
-                .andExpect(model().attribute("licencias", List.of(mockLicense)))
-                .andExpect(model().attribute("busquedaRealizada", true));
-
-        // Verificar que el servicio fue llamado
-        verify(licenseService).searchFilteredLicenses("12345678", null, null, null, null, null, "asc");
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void showPrintLicensePage_cuandoLicenciaExiste_deberiaRetornarVistaImpresion() throws Exception {
-        // Simular que el servicio encuentra la licencia por ID
-        when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
-
-        mockMvc.perform(get("/administrativo/licencias/imprimir/1"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("administrativo/licenseToPrint"))
-                .andExpect(model().attributeExists("licencia"))
-                .andExpect(model().attribute("licencia", mockLicense));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void showPrintLicensePage_cuandoLicenciaNoExiste_deberiaRedirigirConError() throws Exception {
-        // Simular que el servicio NO encuentra la licencia
-        when(licenseService.getLicenseById(anyLong())).thenReturn(null);
-
-        mockMvc.perform(get("/administrativo/licencias/imprimir/99"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/buscar?error=notfound"));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void generarLicenciaPdf_cuandoLicenciaExiste_deberiaRetornarPdf() throws Exception {
-        byte[] pdfBytes = "Este es un PDF falso".getBytes(); // Contenido del PDF simulado
-
-        when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
-        when(pdfGeneratorService.generateLicensePdf(mockLicense)).thenReturn(pdfBytes);
-
-        mockMvc.perform(get("/administrativo/licencias/generar-pdf/1"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
-                .andExpect(header().string("Content-Disposition",
-                        "form-data; name=\"attachment\"; filename=\"licencia_1_GONZALEZ.pdf\""))
-                .andExpect(content().bytes(pdfBytes));
-
-        // Verificar que los servicios fueron llamados como se esperaba
-        verify(licenseService, times(1)).getLicenseById(1L);
-        verify(pdfGeneratorService, times(1)).generateLicensePdf(mockLicense);
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void generarLicenciaPdf_cuandoLicenciaNoExiste_deberiaRetornarNotFound() throws Exception {
-        // Simular que la licencia no se encuentra
-        when(licenseService.getLicenseById(99L)).thenReturn(null);
-
-        mockMvc.perform(get("/administrativo/licencias/generar-pdf/99"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void generarLicenciaPdf_cuandoHayErrorDeGeneracion_deberiaRetornarError500() throws Exception {
-        // Simular que la generación del PDF lanza una excepción
-        when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
-        when(pdfGeneratorService.generateLicensePdf(mockLicense)).thenThrow(new RuntimeException("Error al crear PDF"));
-
-        mockMvc.perform(get("/administrativo/licencias/generar-pdf/1"))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void savePaymentMethod_cuandoEsExitoso_deberiaRetornarOk() throws Exception {
-        when(licenseService.assignPaymentToLicense(1L, PaymentMethod.TARJETA_DE_CREDITO))
-                .thenReturn(mockLicense);
-
-        mockMvc.perform(post("/administrativo/licencias/guardar-metodo-pago/1")
-                .param("paymentMethod", "TARJETA_DE_CREDITO"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Método de pago guardado exitosamente"));
-
-        // Verifica que el método del servicio fue llamado con los argumentos correctos
-        verify(licenseService).assignPaymentToLicense(1L, PaymentMethod.TARJETA_DE_CREDITO);
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void savePaymentMethod_cuandoFalla_deberiaRetornarErrorInterno() throws Exception {
-        // Simular que el servicio lanza una excepción
-        doThrow(new RuntimeException("Error en base de datos")).when(licenseService).assignPaymentToLicense(anyLong(),
-                any(PaymentMethod.class));
-
-        mockMvc.perform(post("/administrativo/licencias/guardar-metodo-pago/1")
-                .param("paymentMethod", "EFECTIVO"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Error al guardar el método de pago"));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void createLicense_conTitularConLicenciaActiva_deberiaInvalidarLicenciaAnterior() throws Exception {
-        // Arrange - preparar la nueva licencia que se va a crear
-        License newLicense = new License();
-        newLicense.setDni("12345678");
-        newLicense.setBirthDate(LocalDate.of(1990, 5, 15));
-        newLicense.setLast_name("GONZALEZ");
-        newLicense.setFirst_name("JUAN");
-
-        // Mock del holder existente
-        when(holderRepository.findById("12345678")).thenReturn(Optional.of(mockHolder));
-
-        // Mock del usuario autenticado
-        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
-
-        // Mock de validaciones
-        when(licenseService.isValidBirthDateWindow(any(LocalDate.class))).thenReturn(true);
-        when(licenseService.isValidAge(any(LocalDate.class), any())).thenReturn(true);
-        when(licenseService.isValidFirstTimeForProfessionalLicense(anyString(), any(LocalDate.class), any()))
-                .thenReturn(true);
-        when(licenseService.isFirstLicense("12345678")).thenReturn(false);
-
-        // Mock del método createLicense que internamente llama a
-        // invalidateActiveLicense
-        when(licenseService.createLicense(any(License.class))).thenReturn(mockNewLicense);
-
-        // Act & Assert
-        mockMvc.perform(post("/administrativo/licencias")
-                .param("dni", "12345678")
-                .param("birthDate", "1990-05-15")
-                .param("last_name", "GONZALEZ")
-                .param("first_name", "JUAN")
-                .param("address", "Direccion 123")
-                .param("city", "Ciudad")
-                .param("cuit", "20-12345678-9")
-                .param("licenseClasses", "A"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/home"));
-
-        // Verify que createLicense fue llamado, que internamente maneja la invalidación
-        verify(licenseService).createLicense(any(License.class));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void createLicense_conTitularSinLicenciaActiva_deberiaCrearLicenciaSinInvalidarOtra() throws Exception {
-        // Arrange - preparar la nueva licencia que se va a crear
-        License newLicense = new License();
-        newLicense.setDni("87654321");
-        newLicense.setBirthDate(LocalDate.of(1995, 8, 20));
-        newLicense.setLast_name("MARTINEZ");
-        newLicense.setFirst_name("MARIA");
-
-        // Mock del holder existente sin licencias previas
-        Holder holderSinLicencias = new Holder();
-        holderSinLicencias.setDni("87654321");
-        holderSinLicencias.setName("MARIA");
-        holderSinLicencias.setLastName("MARTINEZ");
-        holderSinLicencias.setBirthDate(LocalDate.of(1995, 8, 20));
-
-        when(holderRepository.findById("87654321")).thenReturn(Optional.of(holderSinLicencias));
-
-        // Mock del usuario autenticado
-        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
-
-        // Mock de validaciones
-        when(licenseService.isValidBirthDateWindow(any(LocalDate.class))).thenReturn(true);
-        when(licenseService.isValidAge(any(LocalDate.class), any())).thenReturn(true);
-        when(licenseService.isValidFirstTimeForProfessionalLicense(anyString(), any(LocalDate.class), any()))
-                .thenReturn(true);
-        when(licenseService.isFirstLicense("87654321")).thenReturn(true);
-
-        // Mock del método createLicense
-        License nuevaLicencia = new License();
-        nuevaLicencia.setId(4L);
-        nuevaLicencia.setDni("87654321");
-        when(licenseService.createLicense(any(License.class))).thenReturn(nuevaLicencia);
-
-        // Act & Assert
-        mockMvc.perform(post("/administrativo/licencias")
-                .param("dni", "87654321")
-                .param("birthDate", "1995-08-20")
-                .param("last_name", "MARTINEZ")
-                .param("first_name", "MARIA")
-                .param("address", "Otra Direccion 456")
-                .param("city", "Otra Ciudad")
-                .param("cuit", "20-87654321-9")
-                .param("licenseClasses", "B"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/home"));
-
-        // Verify que createLicense fue llamado
-        verify(licenseService).createLicense(any(License.class));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_cuandoLicenciaExiste_deberiaCrearCopiaYRedirigirConMensajeExito() throws Exception {
-        // Arrange
-        when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
-        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
-        doNothing().when(licenseService).makeLicenseCopy(mockLicense, mockUser);
-
-        // Act & Assert
-        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/list"))
-                .andExpect(flash().attribute("success", "Licencia copiada exitosamente"));
-
-        // Verify service methods were called
-        verify(licenseService).getLicenseById(1L);
-        verify(usuarioRepository).findByUsername("user");
-        verify(licenseService).makeLicenseCopy(mockLicense, mockUser);
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_cuandoLicenciaNoExiste_deberiaRedirigirConMensajeError() throws Exception {
-        // Arrange
-        when(licenseService.getLicenseById(99L)).thenReturn(null);
-
-        // Act & Assert
-        mockMvc.perform(get("/administrativo/licencias/99/copiar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/list"))
-                .andExpect(flash().attribute("error", "Licencia no encontrada"));
-
-        // Verify only getLicenseById was called
-        verify(licenseService).getLicenseById(99L);
-        verify(usuarioRepository, never()).findByUsername(any());
-        verify(licenseService, never()).makeLicenseCopy(any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_cuandoAdministrativoNoExiste_deberiaRedirigirConMensajeError() throws Exception {
-        // Arrange
-        when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
-        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.empty());
-
-        // Act & Assert
-        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/list"))
-                .andExpect(flash().attribute("error", "Administrativo no encontrado"));
-
-        // Verify service methods were called appropriately
-        verify(licenseService).getLicenseById(1L);
-        verify(usuarioRepository).findByUsername("user");
-        verify(licenseService, never()).makeLicenseCopy(any(), any());
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_cuandoHayExcepcionEnServicio_deberiaRedirigirConMensajeError() throws Exception {
-        // Arrange
-        when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
-        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
-        doThrow(new RuntimeException("Error en base de datos")).when(licenseService).makeLicenseCopy(mockLicense,
-                mockUser); // Act & Assert
-        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/list"))
-                .andExpect(flash().attribute("error", "Error inesperado al copiar la licencia"));
-
-        // Verify all service methods were called
-        verify(licenseService).getLicenseById(1L);
-        verify(usuarioRepository).findByUsername("user");
-        verify(licenseService).makeLicenseCopy(mockLicense, mockUser);
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_deberiaUsarUsuarioAutenticado() throws Exception {
-        // Arrange
-        when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
-        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
-        doNothing().when(licenseService).makeLicenseCopy(mockLicense, mockUser);
-
-        // Act
-        mockMvc.perform(get("/administrativo/licencias/1/copiar"));
-
-        // Assert - verificar que se usa el usuario autenticado correcto
-        verify(usuarioRepository).findByUsername("user"); // "user" es el username del mock user
-        verify(licenseService).makeLicenseCopy(mockLicense, mockUser);
-    }
-    
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_cuandoLicenciaEstaVencida_deberiaRedirigirConMensajeError() throws Exception {
-        // Arrange
-        License expiredLicense = new License();
-        expiredLicense.setId(1L);
-        expiredLicense.setDni("12345678");
-        expiredLicense.setIsValid(true);
-        expiredLicense.setExpirationDate(LocalDate.now().minusDays(1)); // Expired yesterday
-        
-        when(licenseService.getLicenseById(1L)).thenReturn(expiredLicense);
-
-        // Act & Assert
-        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/list"))
-                .andExpect(flash().attribute("error", "No se puede copiar una licencia vencida, se debe emitir una nueva"));
-
-        // Verify that only getLicenseById was called, no further processing
-        verify(licenseService).getLicenseById(1L);
-        verify(usuarioRepository, never()).findByUsername(any());
-        verify(licenseService, never()).makeLicenseCopy(any(), any());
-    }
-    
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_cuandoLicenciaEsInvalida_deberiaRedirigirConMensajeError() throws Exception {
-        // Arrange
-        License invalidLicense = new License();
-        invalidLicense.setId(1L);
-        invalidLicense.setDni("12345678");
-        invalidLicense.setIsValid(false); // Invalid license
-        invalidLicense.setExpirationDate(LocalDate.now().plusYears(2)); // Not expired
-        
-        when(licenseService.getLicenseById(1L)).thenReturn(invalidLicense);
-
-        // Act & Assert
-        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/list"))
-                .andExpect(flash().attribute("error", "No se puede copiar una licencia no válida."));
-
-        // Verify that only getLicenseById was called, no further processing
-        verify(licenseService).getLicenseById(1L);
-        verify(usuarioRepository, never()).findByUsername(any());
-        verify(licenseService, never()).makeLicenseCopy(any(), any());
-    }
-    
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_cuandoLicenciaEsVencidaEInvalida_deberiaRedirigirConMensajeDeVencida() throws Exception {
-        // Arrange - license that is both expired and invalid
-        License expiredAndInvalidLicense = new License();
-        expiredAndInvalidLicense.setId(1L);
-        expiredAndInvalidLicense.setDni("12345678");
-        expiredAndInvalidLicense.setIsValid(false); // Invalid
-        expiredAndInvalidLicense.setExpirationDate(LocalDate.now().minusDays(1)); // Expired
-        
-        when(licenseService.getLicenseById(1L)).thenReturn(expiredAndInvalidLicense);
-
-        // Act & Assert
-        // Should show expired message first (since expired check comes first in the code)
-        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/list"))
-                .andExpect(flash().attribute("error", "No se puede copiar una licencia vencida, se debe emitir una nueva"));
-
-        // Verify that only getLicenseById was called
-        verify(licenseService).getLicenseById(1L);
-        verify(usuarioRepository, never()).findByUsername(any());
-        verify(licenseService, never()).makeLicenseCopy(any(), any());
-    }
-    
-    @Test
-    @WithMockUser(roles = "ADMINISTRATIVO")
-    void copiarLicencia_cuandoLicenciaEsValidaYNoVencida_deberiaContinuarConProceso() throws Exception {
-        // Arrange
-        License validAndNotExpiredLicense = new License();
-        validAndNotExpiredLicense.setId(1L);
-        validAndNotExpiredLicense.setDni("12345678");
-        validAndNotExpiredLicense.setIsValid(true); // Valid
-        validAndNotExpiredLicense.setExpirationDate(LocalDate.now().plusYears(2)); // Not expired
-        
-        when(licenseService.getLicenseById(1L)).thenReturn(validAndNotExpiredLicense);
-        when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
-        doNothing().when(licenseService).makeLicenseCopy(validAndNotExpiredLicense, mockUser);
-
-        // Act & Assert
-        mockMvc.perform(get("/administrativo/licencias/1/copiar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/administrativo/licencias/list"))
-                .andExpect(flash().attribute("success", "Licencia copiada exitosamente"));
-
-        // Verify that all methods were called (full process completed)
-        verify(licenseService).getLicenseById(1L);
-        verify(usuarioRepository).findByUsername("user");
-        verify(licenseService).makeLicenseCopy(validAndNotExpiredLicense, mockUser);
-    }
+        @Autowired
+        private MockMvc mockMvc;
+
+        // Mockear los servicios que son dependencias del controlador
+        @MockBean
+        private LicenseService licenseService;
+
+        @MockBean
+        private HolderRepository holderRepository;
+
+        @MockBean
+        private UsuarioRepository usuarioRepository;
+
+        @MockBean
+        private PdfGeneratorService pdfGeneratorService;
+
+        @MockBean
+        private CustomUserDetailsService customUserDetailsService;
+
+        @MockBean
+        private LicenseReportService licenseReportService;
+
+        @MockBean
+        private PaymentReceiptRepository paymentReceiptRepository;
+
+        private License mockLicense;
+        private Holder mockHolder;
+
+        // Additional test data for reissue tests
+        private User mockUser;
+        private License mockActiveLicense;
+        private License mockNewLicense;
+
+        @BeforeEach
+        void setUp() {
+                mockHolder = new Holder();
+                mockHolder.setDni("12345678");
+                mockHolder.setName("JUAN");
+                mockHolder.setLastName("GONZALEZ");
+                mockHolder.setBirthDate(LocalDate.of(1990, 5, 15));
+
+                mockLicense = new License();
+                mockLicense.setId(1L);
+                mockLicense.setLast_name("GONZALEZ");
+                mockLicense.setFirst_name("JUAN");
+                mockLicense.setDni("12345678");
+                mockLicense.setBirthDate(LocalDate.of(1990, 5, 15));
+                mockLicense.setIssuanceDate(LocalDate.now());
+                mockLicense.setExpirationDate(LocalDate.now().plusYears(5));
+                mockLicense.setHolder(mockHolder);
+                mockLicense.setIsValid(true);
+
+                mockUser = new User();
+                mockUser.setId(1L);
+                mockUser.setUsername("admin");
+                mockUser.setPassword("password");
+
+                mockActiveLicense = new License();
+                mockActiveLicense.setId(2L);
+                mockActiveLicense.setDni("12345678");
+                mockActiveLicense.setIsValid(true);
+                mockActiveLicense.setHolder(mockHolder);
+                mockActiveLicense.setIssuanceDate(LocalDate.now().minusYears(1));
+                mockActiveLicense.setExpirationDate(LocalDate.now().plusYears(4));
+                mockNewLicense = new License();
+                mockNewLicense.setId(3L);
+                mockNewLicense.setDni("12345678");
+                mockNewLicense.setIsValid(true);
+                mockNewLicense.setHolder(mockHolder);
+                mockNewLicense.setIssuanceDate(LocalDate.now());
+                mockNewLicense.setExpirationDate(LocalDate.now().plusYears(5));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void mostrarLicenciasConFiltro_deberiaRetornarVistaConLicencias() throws Exception {
+                // Simular que el servicio devuelve una lista con nuestra licencia de prueba
+                when(licenseService.searchFilteredLicenses("12345678", null, null, null, null, null, "desc"))
+                                .thenReturn(List.of(mockLicense));
+
+                mockMvc.perform(get("/administrativo/licencias/list")
+                                .param("dni", "12345678")
+                                .param("orden", "desc"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("administrativo/licensesList"))
+                                .andExpect(model().attributeExists("licencias"))
+                                .andExpect(model().attribute("licencias", List.of(mockLicense)));
+
+                // Verificar que el servicio fue llamado con los parámetros correctos
+                verify(licenseService).searchFilteredLicenses("12345678", null, null, null, null, null, "desc");
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void showAndSearchLicensesPage_cuandoNoHayBusqueda_deberiaRetornarVistaVacia() throws Exception {
+                mockMvc.perform(get("/administrativo/licencias/buscar"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("administrativo/searchLicenses"))
+                                .andExpect(model().attribute("licencias", Collections.emptyList()))
+                                .andExpect(model().attribute("busquedaRealizada", false));
+
+                // Verificar que el servicio NUNCA fue llamado porque no hay parámetros de
+                // búsqueda
+                verify(licenseService, never()).searchFilteredLicenses(any(), any(), any(), any(), any(), any(), any());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void showAndSearchLicensesPage_cuandoHayBusqueda_deberiaRetornarResultados() throws Exception {
+                // Simular que el servicio encuentra una licencia
+                when(licenseService.searchFilteredLicenses("12345678", null, null, null, null, null, "asc"))
+                                .thenReturn(List.of(mockLicense));
+
+                mockMvc.perform(get("/administrativo/licencias/buscar")
+                                .param("dni", "12345678"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("administrativo/searchLicenses"))
+                                .andExpect(model().attribute("licencias", List.of(mockLicense)))
+                                .andExpect(model().attribute("busquedaRealizada", true));
+
+                // Verificar que el servicio fue llamado
+                verify(licenseService).searchFilteredLicenses("12345678", null, null, null, null, null, "asc");
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void showPrintLicensePage_cuandoLicenciaExiste_deberiaRetornarVistaImpresion() throws Exception {
+                // Simular que el servicio encuentra la licencia por ID
+                when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
+
+                mockMvc.perform(get("/administrativo/licencias/imprimir/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(view().name("administrativo/licenseToPrint"))
+                                .andExpect(model().attributeExists("licencia"))
+                                .andExpect(model().attribute("licencia", mockLicense));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void showPrintLicensePage_cuandoLicenciaNoExiste_deberiaRedirigirConError() throws Exception {
+                // Simular que el servicio NO encuentra la licencia
+                when(licenseService.getLicenseById(anyLong())).thenReturn(null);
+
+                mockMvc.perform(get("/administrativo/licencias/imprimir/99"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/buscar?error=notfound"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void generarLicenciaPdf_cuandoLicenciaExiste_deberiaRetornarPdf() throws Exception {
+                byte[] pdfBytes = "Este es un PDF falso".getBytes(); // Contenido del PDF simulado
+
+                when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
+                when(pdfGeneratorService.generateLicensePdf(mockLicense)).thenReturn(pdfBytes);
+
+                mockMvc.perform(get("/administrativo/licencias/generar-pdf/1"))
+                                .andExpect(status().isOk())
+                                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                                .andExpect(header().string("Content-Disposition",
+                                                "form-data; name=\"attachment\"; filename=\"licencia_1_GONZALEZ.pdf\""))
+                                .andExpect(content().bytes(pdfBytes));
+
+                // Verificar que los servicios fueron llamados como se esperaba
+                verify(licenseService, times(1)).getLicenseById(1L);
+                verify(pdfGeneratorService, times(1)).generateLicensePdf(mockLicense);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void generarLicenciaPdf_cuandoLicenciaNoExiste_deberiaRetornarNotFound() throws Exception {
+                // Simular que la licencia no se encuentra
+                when(licenseService.getLicenseById(99L)).thenReturn(null);
+
+                mockMvc.perform(get("/administrativo/licencias/generar-pdf/99"))
+                                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void generarLicenciaPdf_cuandoHayErrorDeGeneracion_deberiaRetornarError500() throws Exception {
+                // Simular que la generación del PDF lanza una excepción
+                when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
+                when(pdfGeneratorService.generateLicensePdf(mockLicense))
+                                .thenThrow(new RuntimeException("Error al crear PDF"));
+
+                mockMvc.perform(get("/administrativo/licencias/generar-pdf/1"))
+                                .andExpect(status().isInternalServerError());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void savePaymentMethod_cuandoEsExitoso_deberiaRetornarOk() throws Exception {
+                when(licenseService.assignPaymentToLicense(1L, PaymentMethod.TARJETA_DE_CREDITO))
+                                .thenReturn(mockLicense);
+
+                mockMvc.perform(post("/administrativo/licencias/guardar-metodo-pago/1")
+                                .param("paymentMethod", "TARJETA_DE_CREDITO"))
+                                .andExpect(status().isOk())
+                                .andExpect(content().string("Método de pago guardado exitosamente"));
+
+                // Verifica que el método del servicio fue llamado con los argumentos correctos
+                verify(licenseService).assignPaymentToLicense(1L, PaymentMethod.TARJETA_DE_CREDITO);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void savePaymentMethod_cuandoFalla_deberiaRetornarErrorInterno() throws Exception {
+                // Simular que el servicio lanza una excepción
+                doThrow(new RuntimeException("Error en base de datos")).when(licenseService).assignPaymentToLicense(
+                                anyLong(),
+                                any(PaymentMethod.class));
+
+                mockMvc.perform(post("/administrativo/licencias/guardar-metodo-pago/1")
+                                .param("paymentMethod", "EFECTIVO"))
+                                .andExpect(status().isInternalServerError())
+                                .andExpect(content().string("Error al guardar el método de pago"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void createLicense_conTitularConLicenciaActiva_deberiaInvalidarLicenciaAnterior() throws Exception {
+                // Arrange - preparar la nueva licencia que se va a crear
+                License newLicense = new License();
+                newLicense.setDni("12345678");
+                newLicense.setBirthDate(LocalDate.of(1990, 5, 15));
+                newLicense.setLast_name("GONZALEZ");
+                newLicense.setFirst_name("JUAN");
+
+                // Mock del holder existente
+                when(holderRepository.findById("12345678")).thenReturn(Optional.of(mockHolder));
+
+                // Mock del usuario autenticado
+                when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+
+                // Mock de validaciones
+                when(licenseService.isValidBirthDateWindow(any(LocalDate.class))).thenReturn(true);
+                when(licenseService.isValidAge(any(LocalDate.class), any())).thenReturn(true);
+                when(licenseService.isValidFirstTimeForProfessionalLicense(anyString(), any(LocalDate.class), any()))
+                                .thenReturn(true);
+                when(licenseService.isFirstLicense("12345678")).thenReturn(false);
+
+                // Mock del método createLicense que internamente llama a
+                // invalidateActiveLicense
+                when(licenseService.createLicense(any(License.class))).thenReturn(mockNewLicense);
+
+                // Act & Assert
+                mockMvc.perform(post("/administrativo/licencias")
+                                .param("dni", "12345678")
+                                .param("birthDate", "1990-05-15")
+                                .param("last_name", "GONZALEZ")
+                                .param("first_name", "JUAN")
+                                .param("address", "Direccion 123")
+                                .param("city", "Ciudad")
+                                .param("cuit", "20-12345678-9")
+                                .param("licenseClasses", "A"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/home"));
+
+                // Verify que createLicense fue llamado, que internamente maneja la invalidación
+                verify(licenseService).createLicense(any(License.class));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void createLicense_conTitularSinLicenciaActiva_deberiaCrearLicenciaSinInvalidarOtra() throws Exception {
+                // Arrange - preparar la nueva licencia que se va a crear
+                License newLicense = new License();
+                newLicense.setDni("87654321");
+                newLicense.setBirthDate(LocalDate.of(1995, 8, 20));
+                newLicense.setLast_name("MARTINEZ");
+                newLicense.setFirst_name("MARIA");
+
+                // Mock del holder existente sin licencias previas
+                Holder holderSinLicencias = new Holder();
+                holderSinLicencias.setDni("87654321");
+                holderSinLicencias.setName("MARIA");
+                holderSinLicencias.setLastName("MARTINEZ");
+                holderSinLicencias.setBirthDate(LocalDate.of(1995, 8, 20));
+
+                when(holderRepository.findById("87654321")).thenReturn(Optional.of(holderSinLicencias));
+
+                // Mock del usuario autenticado
+                when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+
+                // Mock de validaciones
+                when(licenseService.isValidBirthDateWindow(any(LocalDate.class))).thenReturn(true);
+                when(licenseService.isValidAge(any(LocalDate.class), any())).thenReturn(true);
+                when(licenseService.isValidFirstTimeForProfessionalLicense(anyString(), any(LocalDate.class), any()))
+                                .thenReturn(true);
+                when(licenseService.isFirstLicense("87654321")).thenReturn(true);
+
+                // Mock del método createLicense
+                License nuevaLicencia = new License();
+                nuevaLicencia.setId(4L);
+                nuevaLicencia.setDni("87654321");
+                when(licenseService.createLicense(any(License.class))).thenReturn(nuevaLicencia);
+
+                // Act & Assert
+                mockMvc.perform(post("/administrativo/licencias")
+                                .param("dni", "87654321")
+                                .param("birthDate", "1995-08-20")
+                                .param("last_name", "MARTINEZ")
+                                .param("first_name", "MARIA")
+                                .param("address", "Otra Direccion 456")
+                                .param("city", "Otra Ciudad")
+                                .param("cuit", "20-87654321-9")
+                                .param("licenseClasses", "B"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/home"));
+
+                // Verify que createLicense fue llamado
+                verify(licenseService).createLicense(any(License.class));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_cuandoLicenciaExiste_deberiaCrearCopiaYRedirigirConMensajeExito() throws Exception {
+                // Arrange
+                when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
+                when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+                doNothing().when(licenseService).makeLicenseCopy(mockLicense, mockUser);
+
+                // Act & Assert
+                mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                                .andExpect(flash().attribute("success", "Licencia copiada exitosamente"));
+
+                // Verify service methods were called
+                verify(licenseService).getLicenseById(1L);
+                verify(usuarioRepository).findByUsername("user");
+                verify(licenseService).makeLicenseCopy(mockLicense, mockUser);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_cuandoLicenciaNoExiste_deberiaRedirigirConMensajeError() throws Exception {
+                // Arrange
+                when(licenseService.getLicenseById(99L)).thenReturn(null);
+
+                // Act & Assert
+                mockMvc.perform(get("/administrativo/licencias/99/copiar"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                                .andExpect(flash().attribute("error", "Licencia no encontrada"));
+
+                // Verify only getLicenseById was called
+                verify(licenseService).getLicenseById(99L);
+                verify(usuarioRepository, never()).findByUsername(any());
+                verify(licenseService, never()).makeLicenseCopy(any(), any());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_cuandoAdministrativoNoExiste_deberiaRedirigirConMensajeError() throws Exception {
+                // Arrange
+                when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
+                when(usuarioRepository.findByUsername("user")).thenReturn(Optional.empty());
+
+                // Act & Assert
+                mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                                .andExpect(flash().attribute("error", "Administrativo no encontrado"));
+
+                // Verify service methods were called appropriately
+                verify(licenseService).getLicenseById(1L);
+                verify(usuarioRepository).findByUsername("user");
+                verify(licenseService, never()).makeLicenseCopy(any(), any());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_cuandoHayExcepcionEnServicio_deberiaRedirigirConMensajeError() throws Exception {
+                // Arrange
+                when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
+                when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+                doThrow(new RuntimeException("Error en base de datos")).when(licenseService).makeLicenseCopy(
+                                mockLicense,
+                                mockUser); // Act & Assert
+                mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                                .andExpect(flash().attribute("error", "Error inesperado al copiar la licencia"));
+
+                // Verify all service methods were called
+                verify(licenseService).getLicenseById(1L);
+                verify(usuarioRepository).findByUsername("user");
+                verify(licenseService).makeLicenseCopy(mockLicense, mockUser);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_deberiaUsarUsuarioAutenticado() throws Exception {
+                // Arrange
+                when(licenseService.getLicenseById(1L)).thenReturn(mockLicense);
+                when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+                doNothing().when(licenseService).makeLicenseCopy(mockLicense, mockUser);
+
+                // Act
+                mockMvc.perform(get("/administrativo/licencias/1/copiar"));
+
+                // Assert - verificar que se usa el usuario autenticado correcto
+                verify(usuarioRepository).findByUsername("user"); // "user" es el username del mock user
+                verify(licenseService).makeLicenseCopy(mockLicense, mockUser);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_cuandoLicenciaEstaVencida_deberiaRedirigirConMensajeError() throws Exception {
+                // Arrange
+                License expiredLicense = new License();
+                expiredLicense.setId(1L);
+                expiredLicense.setDni("12345678");
+                expiredLicense.setIsValid(true);
+                expiredLicense.setExpirationDate(LocalDate.now().minusDays(1)); // Expired yesterday
+
+                when(licenseService.getLicenseById(1L)).thenReturn(expiredLicense);
+
+                // Act & Assert
+                mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                                .andExpect(flash().attribute("error",
+                                                "No se puede copiar una licencia vencida, se debe emitir una nueva"));
+
+                // Verify that only getLicenseById was called, no further processing
+                verify(licenseService).getLicenseById(1L);
+                verify(usuarioRepository, never()).findByUsername(any());
+                verify(licenseService, never()).makeLicenseCopy(any(), any());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_cuandoLicenciaEsInvalida_deberiaRedirigirConMensajeError() throws Exception {
+                // Arrange
+                License invalidLicense = new License();
+                invalidLicense.setId(1L);
+                invalidLicense.setDni("12345678");
+                invalidLicense.setIsValid(false); // Invalid license
+                invalidLicense.setExpirationDate(LocalDate.now().plusYears(2)); // Not expired
+
+                when(licenseService.getLicenseById(1L)).thenReturn(invalidLicense);
+
+                // Act & Assert
+                mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                                .andExpect(flash().attribute("error", "No se puede copiar una licencia no válida."));
+
+                // Verify that only getLicenseById was called, no further processing
+                verify(licenseService).getLicenseById(1L);
+                verify(usuarioRepository, never()).findByUsername(any());
+                verify(licenseService, never()).makeLicenseCopy(any(), any());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_cuandoLicenciaEsVencidaEInvalida_deberiaRedirigirConMensajeDeVencida() throws Exception {
+                // Arrange - license that is both expired and invalid
+                License expiredAndInvalidLicense = new License();
+                expiredAndInvalidLicense.setId(1L);
+                expiredAndInvalidLicense.setDni("12345678");
+                expiredAndInvalidLicense.setIsValid(false); // Invalid
+                expiredAndInvalidLicense.setExpirationDate(LocalDate.now().minusDays(1)); // Expired
+
+                when(licenseService.getLicenseById(1L)).thenReturn(expiredAndInvalidLicense);
+
+                // Act & Assert
+                // Should show expired message first (since expired check comes first in the
+                // code)
+                mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                                .andExpect(flash().attribute("error",
+                                                "No se puede copiar una licencia vencida, se debe emitir una nueva"));
+
+                // Verify that only getLicenseById was called
+                verify(licenseService).getLicenseById(1L);
+                verify(usuarioRepository, never()).findByUsername(any());
+                verify(licenseService, never()).makeLicenseCopy(any(), any());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATIVO")
+        void copiarLicencia_cuandoLicenciaEsValidaYNoVencida_deberiaContinuarConProceso() throws Exception {
+                // Arrange
+                License validAndNotExpiredLicense = new License();
+                validAndNotExpiredLicense.setId(1L);
+                validAndNotExpiredLicense.setDni("12345678");
+                validAndNotExpiredLicense.setIsValid(true); // Valid
+                validAndNotExpiredLicense.setExpirationDate(LocalDate.now().plusYears(2)); // Not expired
+
+                when(licenseService.getLicenseById(1L)).thenReturn(validAndNotExpiredLicense);
+                when(usuarioRepository.findByUsername("user")).thenReturn(Optional.of(mockUser));
+                doNothing().when(licenseService).makeLicenseCopy(validAndNotExpiredLicense, mockUser);
+
+                // Act & Assert
+                mockMvc.perform(get("/administrativo/licencias/1/copiar"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/administrativo/licencias/list"))
+                                .andExpect(flash().attribute("success", "Licencia copiada exitosamente"));
+
+                // Verify that all methods were called (full process completed)
+                verify(licenseService).getLicenseById(1L);
+                verify(usuarioRepository).findByUsername("user");
+                verify(licenseService).makeLicenseCopy(validAndNotExpiredLicense, mockUser);
+        }
 }

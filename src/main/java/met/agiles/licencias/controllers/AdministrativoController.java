@@ -251,10 +251,12 @@ public class AdministrativoController {
     public String showLicenseReceiptError(@RequestParam(name = "error") String errorType, Model model) {
         switch (errorType) {
             case "licensenotfound":
-                model.addAttribute("errorMessage", "Error: La licencia solicitada no fue encontrada. Por favor, intente con otro ID.");
+                model.addAttribute("errorMessage",
+                        "Error: La licencia solicitada no fue encontrada. Por favor, intente con otro ID.");
                 break;
             case "notprinted":
-                model.addAttribute("errorMessage", "Error: La licencia no ha sido impresa aún. No tiene asociado un comprobante de pago.");
+                model.addAttribute("errorMessage",
+                        "Error: La licencia no ha sido impresa aún. No tiene asociado un comprobante de pago.");
                 break;
             case "internal_error":
                 model.addAttribute("errorMessage", "Ha ocurrido un error interno al procesar el comprobante.");
@@ -312,7 +314,8 @@ public class AdministrativoController {
             System.out.println("Comprobante de pago encontrado: \n" +
                     "ID: " + paymentReceipt.getId() +
                     "\nLicencia DNI: " + paymentReceipt.getLicense().getDni() +
-                    "\nNombre: " + paymentReceipt.getLicense().getFirst_name() + " " + paymentReceipt.getLicense().getLast_name() +
+                    "\nNombre: " + paymentReceipt.getLicense().getFirst_name() + " "
+                    + paymentReceipt.getLicense().getLast_name() +
                     "\nMétodo de pago: " + paymentReceipt.getPaymentMethod() +
                     "\nFecha de pago: " + paymentReceipt.getPaymentDate() +
                     "\nAdministrativo: " + paymentReceipt.getAdministrativo().getUsername());
@@ -343,9 +346,11 @@ public class AdministrativoController {
             logger.info("Método de pago {} asignado a la licencia ID {}", paymentMethod, id);
             return new ResponseEntity<>("Método de pago guardado exitosamente", HttpStatus.OK);
         } catch (RuntimeException e) {
-            logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id, e.getMessage());
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }    }
+            logger.error("Error al asignar el método de pago {} a la licencia ID {}: {}", paymentMethod, id,
+                    e.getMessage());
+            return new ResponseEntity<>("Error al guardar el método de pago", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     @Autowired
     private LicenseReportService licenseReportService;

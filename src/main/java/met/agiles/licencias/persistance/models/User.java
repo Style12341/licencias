@@ -30,10 +30,10 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @Column(nullable = false)
+    @Column()
     private String firstName;
 
-    @Column(nullable = false)
+    @Column()
     private String lastName;
 
     @ManyToOne(optional = true)
