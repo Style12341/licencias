@@ -49,22 +49,23 @@ class UserServiceTest {
         admin.setUsername("admin");
         when(userRepo.findByUsername("admin")).thenReturn(Optional.of(admin));
 
+        // Mock the save method to return the user being saved
+        when(userRepo.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
         // Act
         User saved = service.createUser(dto, "admin");
 
         // Assert
+        assertNotNull(saved);
         assertEquals("hash", saved.getPassword());
+        assertEquals("pepito", saved.getUsername());
+        assertEquals(Role.ADMINISTRATIVO, saved.getRole());
+        assertNotNull(saved.getCreatedByUser());
+        assertEquals("admin", saved.getCreatedByUser().getUsername());
+        assertNotNull(saved.getCreationDate());
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepo).save(captor.capture());
-        User toSave = captor.getValue();
-
-        assertEquals("pepito", toSave.getUsername());
-        assertEquals("hash", toSave.getPassword());
-        assertEquals(Role.ADMINISTRATIVO, toSave.getRole());
-        assertNotNull(toSave.getCreatedByUser());
-        assertEquals("admin", toSave.getCreatedByUser().getUsername());
-        assertNotNull(toSave.getCreationDate());
+        // Verify save was called
+        verify(userRepo).save(any(User.class));
     }
 
     @Test
@@ -97,6 +98,9 @@ class UserServiceTest {
         performedBy.setUsername("adminUser");
         when(userRepo.findByUsername("adminUser")).thenReturn(Optional.of(performedBy));
 
+        // Mock the save method to return the updated user
+        when(userRepo.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
         User dto = new User();
         dto.setId(42L);
         dto.setFirstName("New");
@@ -107,21 +111,19 @@ class UserServiceTest {
         // Act
         User updated = service.actualizarDatosUsuario(dto, "adminUser");
 
-        // Assert saved fields
-        ArgumentCaptor<User> userCap = ArgumentCaptor.forClass(User.class);
-        verify(userRepo).save(userCap.capture());
-        User saved = userCap.getValue();
-        assertEquals("New",   saved.getFirstName());
-        assertEquals("Name2", saved.getLastName());
-        assertEquals("Pcia",  saved.getProvincia());
-        assertEquals("Cdad",  saved.getCiudad());
+        // Assert the returned user has the updated fields
+        assertNotNull(updated);
+        assertEquals("New", updated.getFirstName());
+        assertEquals("Name2", updated.getLastName());
+        assertEquals("Pcia", updated.getProvincia());
+        assertEquals("Cdad", updated.getCiudad());
 
         // Assert audit
         ArgumentCaptor<UserModificationAudit> auditCap =
                 ArgumentCaptor.forClass(UserModificationAudit.class);
         verify(auditRepo).save(auditCap.capture());
         UserModificationAudit audit = auditCap.getValue();
-        assertEquals(saved,       audit.getTargetUser());
+        assertEquals(updated, audit.getTargetUser());
         assertEquals(performedBy, audit.getPerformedBy());
         assertNotNull(audit.getPerformedAt());
     }
