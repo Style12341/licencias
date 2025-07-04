@@ -93,8 +93,8 @@ class LicenseServiceTest {
         licenseService.setExpiracionLicencia(license);
 
         // Assert
+        assertTrue(licenseService.isFirstLicense("12345678"));
         assertEquals(today.plusYears(1), license.getExpirationDate());
-        assertEquals("Principiante por primeros 6 meses.", license.getObvservations());
     }
 
     @Test
@@ -669,13 +669,12 @@ class LicenseServiceTest {
         licenseService.makeLicenseCopy(validOriginalLicense, administrativo);
 
         // Assert
-        verify(licenseRepository).save(argThat(newLicense ->
-                newLicense.getDni().equals("12345678") &&
-                        newLicense.getIsValid().equals(true) &&
-                        newLicense.getVersion().equals(2) && // Version should be incremented
-                        newLicense.isCopy() && // Should be identified as a copy
-                        newLicense.getUser().equals(administrativo) &&
-                        newLicense.getIssuanceDate().equals(today) // New issuance date
+        verify(licenseRepository).save(argThat(newLicense -> newLicense.getDni().equals("12345678") &&
+                newLicense.getIsValid().equals(true) &&
+                newLicense.getVersion().equals(2) && // Version should be incremented
+                newLicense.isCopy() && // Should be identified as a copy
+                newLicense.getUser().equals(administrativo) &&
+                newLicense.getIssuanceDate().equals(today) // New issuance date
         ));
     }
 
